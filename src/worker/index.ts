@@ -4,6 +4,9 @@ import type { Env } from './env';
 import { HttpError, json, Router, withSecurityHeaders, type Ctx } from './http';
 import * as pagar from './pagar';
 
+declare const __VERSION__: string;
+const VERSION = typeof __VERSION__ === 'string' ? __VERSION__ : 'local';
+
 export const router = new Router()
   .on('GET', '/datos/salud', salud)
   .on('GET', '/datos/config', config)
@@ -57,7 +60,7 @@ async function salud(ctx: Ctx): Promise<Response> {
   piezas.lectura_ia = ctx.env.GEMINI_API_KEY ? 'ok' : 'apagado';
   piezas.turnstile = ctx.env.TURNSTILE_SECRET_KEY && ctx.env.TURNSTILE_SITE_KEY ? 'ok' : 'apagado';
   const ok = piezas.base === 'ok' && piezas.almacen === 'ok' && piezas.correo === 'ok';
-  return json({ ok, piezas }, ok ? 200 : 503);
+  return json({ ok, version: VERSION, piezas }, ok ? 200 : 503);
 }
 
 async function config(ctx: Ctx): Promise<Response> {

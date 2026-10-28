@@ -71,11 +71,13 @@ jobs:
     steps:
       - name: Esperar la versión nueva y comprobar las rutas críticas
         run: |
-          for i in $(seq 1 40); do
-            if curl -fsS https://fintwin.windoce.com/datos/salud | grep -q '"base":"ok"'; then break; fi
+          for i in $(seq 1 45); do
+            if curl -fsS https://fintwin.windoce.com/datos/salud | grep -q "\"version\":\"$GITHUB_SHA\""; then break; fi
             sleep 20
           done
-          curl -fsS https://fintwin.windoce.com/datos/salud
+          curl -fsS https://fintwin.windoce.com/datos/salud | tee salud.json
+          grep -q "\"version\":\"$GITHUB_SHA\"" salud.json
+          grep -q '"ok":true' salud.json
           for ruta in / /login /signup /delete-account /.well-known/assetlinks.json /icon.png; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "https://fintwin.windoce.com$ruta")
             echo "$ruta → $code"
