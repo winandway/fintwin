@@ -88,11 +88,13 @@ export default {
     const url = new URL(req.url);
     if (url.pathname.startsWith('/datos/')) return withSecurityHeaders(await datos(req, env, url));
 
-    // Pantallas: los estáticos, y para cualquier ruta de la app, el index.html.
+    // Pantallas: los estáticos, y para cualquier ruta de la app, la portada (index.html).
+    // Se pide «/» y no «/index.html»: los estáticos desvían /index.html a «/» con un 307,
+    // y ese desvío llegaba al navegador y lo sacaba de la pantalla pedida.
     let res = await env.ASSETS.fetch(req);
     const esPagina = req.method === 'GET' && !/\.[a-z0-9]+$/i.test(url.pathname);
-    if (res.status === 404 && esPagina) {
-      res = await env.ASSETS.fetch(new Request(new URL('/index.html', url), req));
+    if (esPagina && url.pathname !== '/' && (res.status === 404 || (res.status >= 300 && res.status < 400))) {
+      res = await env.ASSETS.fetch(new Request(new URL('/', url), req));
     }
     return withSecurityHeaders(res);
   },

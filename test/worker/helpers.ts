@@ -22,7 +22,9 @@ export function crearMundo(extra: Partial<Env> = {}) {
     ASSETS: {
       fetch: async (req: Request) => {
         const p = new URL(req.url).pathname;
-        if (p === '/index.html') return new Response('<html>app</html>', { headers: { 'content-type': 'text/html' } });
+        // Igual que los estáticos del sitio: «/» es la portada y /index.html desvía a «/».
+        if (p === '/') return new Response('<html>app</html>', { headers: { 'content-type': 'text/html' } });
+        if (p === '/index.html') return new Response(null, { status: 307, headers: { location: '/' } });
         if (p === '/icon.png') return new Response('png', { headers: { 'content-type': 'image/png' } });
         return new Response('not found', { status: 404 });
       },

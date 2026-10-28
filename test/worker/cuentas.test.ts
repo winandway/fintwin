@@ -225,6 +225,7 @@ describe('sitio', () => {
   it('las rutas de la app devuelven la página y llevan cabeceras de seguridad', async () => {
     const w = crearMundo();
     const r = await w.call('GET', '/accounts/abc');
+    expect(r.status).toBe(200);
     expect(r.data).toContain('app');
     expect(r.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
     expect((await w.call('GET', '/nada.js')).status).toBe(404);
