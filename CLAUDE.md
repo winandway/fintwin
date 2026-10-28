@@ -33,3 +33,14 @@ Las globales de Richard mandan (español en el chat, publicar por defecto,
 blindaje desde el primer commit, borradores en todo formulario, ojito en las
 contraseñas, Turnstile, borrar dentro de los 3 puntos, pie con Windoce LLC,
 inglés como idioma principal con español en /es).
+
+## Comandos
+
+- `npm run dev:todo` — pantallas + servidor local con base en memoria (correos impresos en consola, en `node_modules/.dev/ultimo-correo.txt`).
+- `npm run verify` — tipos, estilo, pruebas con cobertura, compilación y dependencias. Tiene que dar verde.
+- Publicar = `git push` a `main`: el Action verifica, empuja `dist/` a `yapanel-build` y hace la prueba de humo en vivo.
+- Variables del sitio: con la llave de IA (`guardar_variable`, luego `republicar`).
+
+## Candados
+
+Ver [CANDADOS.md](CANDADOS.md).

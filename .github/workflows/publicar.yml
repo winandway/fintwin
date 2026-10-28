@@ -1,0 +1,83 @@
+name: Verificar y publicar
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Secretos fuera del código
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tipos, estilo, pruebas, compilación y dependencias
+        run: npm run verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          include-hidden-files: true
+
+  publicar:
+    # YaDominios Cloud publica lo que haya en la raíz de la rama yapanel-build.
+    needs: verificar
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: yapanel-build
+          path: publicado
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Empujar lo compilado a yapanel-build
+        run: |
+          cd publicado
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R ../dist/. .
+          test -f _worker.js && test -f schema.sql && test -f index.html && test -f .well-known/assetlinks.json
+          git config user.name "fintwin-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "Sin cambios" && exit 0
+          git commit -m "build: ${GITHUB_SHA::7}"
+          git push origin yapanel-build
+
+  humo:
+    # Prueba de humo en vivo: la plataforma republica en hasta ~5 minutos.
+    needs: publicar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Esperar la versión nueva y comprobar las rutas críticas
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS https://fintwin.windoce.com/datos/salud | grep -q '"base":"ok"'; then break; fi
+            sleep 20
+          done
+          curl -fsS https://fintwin.windoce.com/datos/salud
+          for ruta in / /login /signup /delete-account /.well-known/assetlinks.json /icon.png; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://fintwin.windoce.com$ruta")
+            echo "$ruta → $code"
+            test "$code" = "200"
+          done

@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-fondo: #0b1220;
+  --color-panel: #111a2e;
+  --color-borde: #1f2a44;
+  --color-tenue: #93a3c4;
+  --color-marca: #22c55e;
+  --color-marca-2: #14b8a6;
+  --color-exito: #22c55e;
+  --color-problema: #ef4444;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--color-fondo);
+  color: #e8eefc;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
