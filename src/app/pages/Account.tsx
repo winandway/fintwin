@@ -1,11 +1,13 @@
-import { ArrowLeft, Check, ImageIcon, KeyRound, LogOut, MinusCircle, QrCode, Settings, Users, X } from 'lucide-react';
+import { ArrowLeft, Check, ImageIcon, KeyRound, LogOut, MinusCircle, QrCode, ReceiptText, Settings, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { formatoDinero } from '../../shared/reglas';
 import { CampoClave } from '../components/CampoClave';
 import { MenuPuntos, type Opcion } from '../components/MenuPuntos';
 import { Aviso, AvisoBorrador, Boton, Campo, Cargando, Modal, Pagina, Tarjeta } from '../components/ui';
+import { TicketConIA, type LecturaTicket } from '../components/TicketConIA';
 import { Visor } from '../components/Visor';
+import { CATEGORIAS, claveCategoria } from '../lib/categorias';
 import { api, type Comprobante, type CuentaDetalle } from '../lib/api';
 import { useBorrador } from '../lib/borrador';
 import { useI18n, useMensajeError } from '../lib/i18n';
@@ -68,6 +70,7 @@ export function Account() {
     { texto: t('account.payLink'), icono: <QrCode className="h-4 w-4" />, onClick: () => navigate(`/accounts/${id}/link`) },
     { texto: t('account.team'), icono: <Users className="h-4 w-4" />, onClick: () => navigate(`/accounts/${id}/team`) },
     ...(esDueno ? [{ texto: t('account.recordOutflow'), icono: <MinusCircle className="h-4 w-4" />, onClick: () => setDialogo('salida') }] : []),
+    ...(esDueno ? [{ texto: t('expense.menu'), icono: <ReceiptText className="h-4 w-4" />, onClick: () => navigate(`/accounts/${id}/commission`) }] : []),
     { texto: t('account.myPin'), icono: <KeyRound className="h-4 w-4" />, onClick: () => setDialogo('pin') },
     ...(esDueno ? [{ texto: t('account.settings'), icono: <Settings className="h-4 w-4" />, onClick: () => setDialogo('ajustes') }] : []),
     ...(!esDueno ? [{ texto: t('account.leave'), icono: <LogOut className="h-4 w-4" />, onClick: () => setDialogo('salir'), peligro: true }] : []),
@@ -107,10 +110,11 @@ export function Account() {
 
       <Tarjeta className="mb-3">
         <p className="text-sm text-tenue">{t('account.total')}</p>
-        <p className="font-mono text-3xl font-bold" data-testid="total">
+        <p className={`font-mono text-3xl font-bold ${detalle.resumen.total_cent < 0 ? 'text-red-400' : ''}`} data-testid="total">
           {dinero(detalle.resumen.total_cent)}
         </p>
         <p className="mt-1 text-xs text-tenue">{t('account.totalHint')}</p>
+        {detalle.resumen.total_cent < 0 && <p className="mt-1 text-xs text-red-300">{t('account.negative')}</p>}
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
           <Cifra etiqueta={t('account.incomeShort')} valor={dinero(detalle.resumen.ingresos_cent)} />
           <Cifra etiqueta={`${t('account.fee')} ${detalle.cuenta.comision_pct}%`} valor={dinero(detalle.resumen.comision_cent)} />
@@ -201,6 +205,7 @@ export function Account() {
       <DialogoSalida
         abierto={dialogo === 'salida'}
         cuentaId={id}
+        totalCent={detalle.resumen.total_cent}
         onCerrar={() => setDialogo(null)}
         onListo={() => {
           setDialogo(null);
@@ -283,9 +288,17 @@ function Fila({ k, seleccionable, marcado, onMarcar, onVer }: { k: Comprobante; 
             </p>
           </>
         ) : (
-          <p className="truncate text-sm text-tenue">
-            {k.motivo} · {fecha}
-          </p>
+          <>
+            <p className="truncate text-sm text-tenue">
+              {k.motivo} · {fecha}
+            </p>
+            {(k.comercio || k.categoria) && (
+              <p className="truncate text-xs text-tenue">
+                {k.comercio ?? ''}
+                {k.categoria ? ` · ${t(claveCategoria(k.categoria))}` : ''}
+              </p>
+            )}
+          </>
         )}
       </div>
       {Boolean(k.tiene_archivo) && (
@@ -342,20 +355,58 @@ function DialogoRevisar({
   );
 }
 
-function DialogoSalida({ abierto, cuentaId, onCerrar, onListo }: { abierto: boolean; cuentaId: string; onCerrar: () => void; onListo: () => void }) {
-  const { t } = useI18n();
+function DialogoSalida({
+  abierto,
+  cuentaId,
+  totalCent,
+  onCerrar,
+  onListo,
+}: {
+  abierto: boolean;
+  cuentaId: string;
+  totalCent: number;
+  onCerrar: () => void;
+  onListo: () => void;
+}) {
+  const { t, idioma } = useI18n();
   const msg = useMensajeError();
   const { usuario } = useSesion();
-  const b = useBorrador(`salida-${cuentaId}`, usuario?.id ?? 'anonimo', { monto: '', motivo: '', pin: '' }, ['pin']);
+  const b = useBorrador(
+    `salida-${cuentaId}`,
+    usuario?.id ?? 'anonimo',
+    { monto: '', motivo: '', comercio: '', categoria: '', fecha: '', pin: '' },
+    ['pin'],
+  );
+  const [archivo, setArchivo] = useState<Blob | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [repetida, setRepetida] = useState(false);
+  const montoCent = Math.round((Number(b.valores.monto.replace(',', '.')) || 0) * 100);
+  const quedaria = totalCent - montoCent;
+
+  function aplicarLectura(l: LecturaTicket) {
+    if (l.total_cent && !b.valores.monto) b.set('monto', (l.total_cent / 100).toFixed(2));
+    if (l.comercio) b.set('comercio', l.comercio);
+    if (l.categoria) b.set('categoria', l.categoria);
+    if (l.fecha) b.set('fecha', l.fecha);
+    if (!b.valores.motivo && (l.resumen || l.comercio)) b.set('motivo', (l.resumen || l.comercio) ?? '');
+  }
+
   async function enviar(confirmar = false) {
+    if (!archivo) {
+      setError(t('err.factura_requerida'));
+      return;
+    }
     setEnviando(true);
     setError('');
     try {
-      await api.post(`/cuentas/${cuentaId}/salidas`, { monto: b.valores.monto, motivo: b.valores.motivo, pin: b.valores.pin, confirmar_repetida: confirmar });
+      const form = new FormData();
+      form.append('archivo', archivo, 'factura');
+      for (const k of ['monto', 'motivo', 'comercio', 'categoria', 'fecha', 'pin'] as const) form.append(k, b.valores[k]);
+      if (confirmar) form.append('confirmar_repetida', '1');
+      await api.form(`/cuentas/${cuentaId}/salidas`, form);
       b.limpiar();
+      setArchivo(null);
       setRepetida(false);
       onListo();
     } catch (err) {
@@ -376,8 +427,18 @@ function DialogoSalida({ abierto, cuentaId, onCerrar, onListo }: { abierto: bool
       >
         <p className="text-sm text-tenue">{t('outflow.text')}</p>
         <AvisoBorrador visible={b.recuperado} onEmpezar={b.limpiar} />
+        <TicketConIA cuentaId={cuentaId} etiqueta={t('outflow.ticket')} archivo={archivo} onArchivo={setArchivo} onLectura={aplicarLectura} />
         <Campo etiqueta={t('outflow.amount')} inputMode="decimal" required placeholder="0.00" value={b.valores.monto} onChange={(e) => b.set('monto', e.target.value)} />
+        {montoCent > 0 && quedaria < 0 && (
+          <Aviso tipo="info">
+            <span data-testid="aviso-en-contra">{t('outflow.negative', { amount: formatoDinero(quedaria, idioma) })}</span>
+          </Aviso>
+        )}
         <Campo etiqueta={t('outflow.reason')} required minLength={2} maxLength={200} value={b.valores.motivo} onChange={(e) => b.set('motivo', e.target.value)} />
+        <div className="grid grid-cols-2 gap-2">
+          <Campo etiqueta={t('expense.merchant')} maxLength={80} value={b.valores.comercio} onChange={(e) => b.set('comercio', e.target.value)} />
+          <SelectorCategoria valor={b.valores.categoria} onCambio={(v) => b.set('categoria', v)} />
+        </div>
         <CampoClave pin etiqueta={t('field.pin')} required value={b.valores.pin} onChange={(e) => b.set('pin', e.target.value.replace(/\D/g, ''))} />
         {error && <Aviso tipo="error">{error}</Aviso>}
         {repetida ? (
@@ -388,12 +449,33 @@ function DialogoSalida({ abierto, cuentaId, onCerrar, onListo }: { abierto: bool
             </Boton>
           </div>
         ) : (
-          <Boton type="submit" cargando={enviando} className="w-full">
+          <Boton type="submit" cargando={enviando} disabled={!archivo} className="w-full">
             {t('outflow.title')}
           </Boton>
         )}
       </form>
     </Modal>
+  );
+}
+
+export function SelectorCategoria({ valor, onCambio }: { valor: string; onCambio: (v: string) => void }) {
+  const { t } = useI18n();
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-sm font-medium text-white">{t('expense.category')}</span>
+      <select
+        value={valor}
+        onChange={(e) => onCambio(e.target.value)}
+        className="w-full rounded-xl border border-borde bg-[#0d1528] px-3 py-3 text-white outline-none focus:border-marca"
+      >
+        <option value="">—</option>
+        {CATEGORIAS.map((c) => (
+          <option key={c} value={c}>
+            {t(claveCategoria(c))}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

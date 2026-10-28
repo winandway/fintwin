@@ -125,3 +125,24 @@ CREATE TABLE IF NOT EXISTS errores (
   mensaje TEXT NOT NULL,
   creado_en INTEGER NOT NULL
 );
+
+-- 28 oct 2026: toda salida lleva su factura; la IA lee el comercio y la categoría.
+ALTER TABLE comprobantes ADD COLUMN comercio TEXT;
+ALTER TABLE comprobantes ADD COLUMN categoria TEXT;
+
+-- Gastos pagados con la comisión de la empresa: cada uno con su ticket.
+CREATE TABLE IF NOT EXISTS gastos_comision (
+  id TEXT PRIMARY KEY,
+  cuenta_id TEXT NOT NULL,
+  registrado_por TEXT NOT NULL,
+  monto_cent INTEGER NOT NULL,
+  comercio TEXT,
+  categoria TEXT,
+  fecha TEXT,
+  nota TEXT,
+  archivo_clave TEXT NOT NULL,
+  archivo_tipo TEXT NOT NULL,
+  archivo_hash TEXT NOT NULL UNIQUE,
+  creado_en INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS gastos_comision_cuenta ON gastos_comision (cuenta_id, creado_en);

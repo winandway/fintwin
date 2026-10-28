@@ -5,8 +5,9 @@ import { hashSecret, newId, newSlug, randomToken, sha256Hex, verifySecret } from
 import type { Env } from './env';
 import { HttpError, json, readJson, type Ctx } from './http';
 import { exigirNoBloqueado, limpiarIntentos, sumarIntento } from './limites';
+import { categoriaValida, fechaValida, leerImagen, textoCorto } from './archivos';
 
-type Rol = 'dueno' | 'validador';
+export type Rol = 'dueno' | 'validador';
 
 interface Membresia {
   cuenta_id: string;
@@ -25,7 +26,7 @@ function parse<T>(schema: z.ZodType<T>, data: unknown): T {
   return r.data;
 }
 
-async function membresia(env: Env, cuentaId: string, usuarioId: string): Promise<Membresia> {
+export async function membresia(env: Env, cuentaId: string, usuarioId: string): Promise<Membresia> {
   const m = await env.DB.prepare(
     `SELECT m.cuenta_id, m.rol, m.pin_hash, c.nombre, c.comision_pct, c.link_slug FROM miembros m
      JOIN cuentas c ON c.id = m.cuenta_id
@@ -37,12 +38,12 @@ async function membresia(env: Env, cuentaId: string, usuarioId: string): Promise
   return m;
 }
 
-function exigirRol(m: Membresia, ...roles: Rol[]): void {
+export function exigirRol(m: Membresia, ...roles: Rol[]): void {
   if (!roles.includes(m.rol)) throw new HttpError(403, 'sin_permiso');
 }
 
 /** PIN personal con límite: 5 fallos en 15 minutos bloquean 15 minutos. */
-async function verificarPin(env: Env, u: Usuario, m: Membresia, pin: string, now: number): Promise<void> {
+export async function verificarPin(env: Env, u: Usuario, m: Membresia, pin: string, now: number): Promise<void> {
   const clave = `pin:${u.id}:${m.cuenta_id}`;
   await exigirNoBloqueado(env, clave, now);
   if (!PIN_RE.test(pin) || !(await verifySecret(pin, m.pin_hash))) {
@@ -163,7 +164,7 @@ export async function listarComprobantes(ctx: Ctx): Promise<Response> {
   }
   const { results } = await ctx.env.DB.prepare(
     `SELECT k.id, k.tipo, k.estado, k.monto_cent, k.comision_cent, k.fecha_pago, k.confirmacion, k.pagador,
-       k.beneficiario, k.motivo, k.lectura, k.archivo_clave IS NOT NULL AS tiene_archivo, k.creado_en, k.revisado_en,
+       k.beneficiario, k.motivo, k.comercio, k.categoria, k.lectura, k.archivo_clave IS NOT NULL AS tiene_archivo, k.creado_en, k.revisado_en,
        s.nombre AS subido_por_nombre, s.email AS subido_por_email, r.nombre AS revisado_por_nombre
      FROM comprobantes k
      LEFT JOIN usuarios s ON s.id = k.subido_por
@@ -209,24 +210,20 @@ export async function revisar(ctx: Ctx): Promise<Response> {
   return json({ ok: true, hechos, ya_revisados: datos.ids.length - hechos.length });
 }
 
+/** Toda salida lleva su factura (desde el 28 oct 2026). Llega como formulario con la imagen. */
 export async function registrarSalida(ctx: Ctx): Promise<Response> {
   const u = await exigirUsuario(ctx);
   const m = await membresia(ctx.env, ctx.params.id ?? '', u.id);
   exigirRol(m, 'dueno');
-  const datos = parse(
-    z.object({
-      monto: z.union([z.string(), z.number()]),
-      motivo: z.string().trim().min(2).max(200),
-      pin: z.string(),
-      confirmar_repetida: z.boolean().optional(),
-    }),
-    await readJson(ctx.req),
-  );
-  const montoCent = aCentavos(datos.monto);
+  const { form, archivo } = await leerImagen(ctx, 'factura_requerida');
+  const montoCent = aCentavos(String(form.get('monto') ?? ''));
+  const motivo = String(form.get('motivo') ?? '').trim().slice(0, 200);
+  const pin = String(form.get('pin') ?? '');
   if (!montoCent) throw new HttpError(400, 'monto_invalido');
-  await verificarPin(ctx.env, u, m, datos.pin, ctx.now);
+  if (motivo.length < 2) throw new HttpError(400, 'datos_invalidos', { campos: ['motivo'] });
+  await verificarPin(ctx.env, u, m, pin, ctx.now);
   // Freno de repetidas: la misma salida en los últimos 10 minutos pide confirmación.
-  if (!datos.confirmar_repetida) {
+  if (form.get('confirmar_repetida') !== '1') {
     const igual = await ctx.env.DB.prepare(
       `SELECT id FROM comprobantes WHERE cuenta_id = ? AND tipo = 'salida' AND monto_cent = ? AND creado_en > ? LIMIT 1`,
     )
@@ -234,13 +231,31 @@ export async function registrarSalida(ctx: Ctx): Promise<Response> {
       .first();
     if (igual) throw new HttpError(409, 'salida_repetida');
   }
-  const id = newId();
-  await ctx.env.DB.prepare(
-    `INSERT INTO comprobantes (id, cuenta_id, subido_por, tipo, estado, monto_cent, motivo, revisado_por, revisado_en, creado_en)
-     VALUES (?, ?, ?, 'salida', 'aprobado', ?, ?, ?, ?, ?)`,
+  const repetida = await ctx.env.DB.prepare(
+    "SELECT id FROM comprobantes WHERE archivo_hash = ? AND estado <> 'rechazado' LIMIT 1",
   )
-    .bind(id, m.cuenta_id, u.id, montoCent, datos.motivo, u.id, ctx.now, ctx.now)
-    .run();
+    .bind(archivo.hash)
+    .first();
+  if (repetida) throw new HttpError(409, 'factura_repetida');
+  const id = newId();
+  const clave = `salidas/${m.cuenta_id}/${id}.${archivo.ext}`;
+  await ctx.env.BUCKET.put(clave, archivo.bytes, { httpMetadata: { contentType: archivo.mime } });
+  try {
+    await ctx.env.DB.prepare(
+      `INSERT INTO comprobantes (id, cuenta_id, subido_por, tipo, estado, monto_cent, motivo, comercio, categoria,
+         fecha_pago, archivo_clave, archivo_hash, archivo_tipo, revisado_por, revisado_en, creado_en)
+       VALUES (?, ?, ?, 'salida', 'aprobado', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        id, m.cuenta_id, u.id, montoCent, motivo, textoCorto(form.get('comercio')), categoriaValida(form.get('categoria')),
+        fechaValida(form.get('fecha')), clave, archivo.hash, archivo.mime, u.id, ctx.now, ctx.now,
+      )
+      .run();
+  } catch (e) {
+    await ctx.env.BUCKET.delete(clave);
+    if (String(e).includes('UNIQUE')) throw new HttpError(409, 'factura_repetida');
+    throw e;
+  }
   return json({ ok: true, id }, 201);
 }
 

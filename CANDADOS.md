@@ -12,5 +12,6 @@ tiene su prueba, comprobada en rojo (se metió el fallo a propósito y la prueba
 | C-BORRADOR-1 | Todo formulario guarda lo escrito y no guarda contraseñas ni PIN | `test/app/pantallas.test.tsx` → «borrador…» | `useBorrador` y su lista de sensibles |
 | C-CORREO-1 | Si un correo no sale, queda escrito en la tabla `errores` | «si el correo no sale…» | `mandar()` en `auth.ts` |
 | C-PANTALLAS-1 | Toda dirección de pantalla (/login, /home, /pay/…) abre la app. Antes se pedía /index.html y los estáticos devolvían un desvío 307 a la portada (28 oct 2026) | «las rutas de la app devuelven la página…» (el simulador desvía /index.html igual que el sitio) | Pedir «/» en el respaldo de `index.ts` |
+| C-FACTURA-1 | Toda salida lleva factura y todo gasto de la comisión lleva ticket; el mismo archivo no entra dos veces; un gasto no pasa de la comisión disponible (28 oct 2026) | `test/worker/cuentas.test.ts` → «salidas…», «gastos de la comisión…» (comprobado en rojo) | `leerImagen` en `archivos.ts` y el tope en `gastos.ts` |
 
 Antes de un rollback o una actualización grande de paquetes: `npm run verify` en verde.

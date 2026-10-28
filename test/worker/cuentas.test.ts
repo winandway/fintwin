@@ -156,19 +156,78 @@ describe('revisión con PIN', () => {
 });
 
 describe('salidas', () => {
-  it('se restan del total y frenan la repetida', async () => {
+  it('sin factura no se registran', async () => {
     const { w, dueno, id } = await escenario();
-    const r = await w.call('POST', `/datos/cuentas/${id}/salidas`, { cookie: dueno, body: { monto: '40', motivo: 'Proveedor', pin: '1234' } });
+    const f = new FormData();
+    f.append('monto', '40');
+    f.append('motivo', 'Proveedor');
+    f.append('pin', '1234');
+    const r = await w.call('POST', `/datos/cuentas/${id}/salidas`, { cookie: dueno, form: f });
+    expect(r.status).toBe(400);
+    expect(r.data.error).toBe('factura_requerida');
+  });
+
+  it('con factura se restan del total, frenan la repetida y la misma factura no entra dos veces', async () => {
+    const { w, dueno, id } = await escenario();
+    const salida = (extra: Record<string, string>, bytes = new Uint8Array([...PNG, 40])) =>
+      w.captura({ monto: '40', motivo: 'Proveedor', pin: '1234', comercio: 'Ferretería', categoria: 'proveedores', ...extra }, bytes);
+    const r = await w.call('POST', `/datos/cuentas/${id}/salidas`, { cookie: dueno, form: salida({}) });
     expect(r.status).toBe(201);
-    const rep = await w.call('POST', `/datos/cuentas/${id}/salidas`, { cookie: dueno, body: { monto: 40, motivo: 'Proveedor', pin: '1234' } });
+    const rep = await w.call('POST', `/datos/cuentas/${id}/salidas`, { cookie: dueno, form: salida({}, new Uint8Array([...PNG, 41])) });
     expect(rep.data.error).toBe('salida_repetida');
+    const misma = await w.call('POST', `/datos/cuentas/${id}/salidas`, { cookie: dueno, form: salida({ confirmar_repetida: '1' }) });
+    expect(misma.data.error).toBe('factura_repetida');
     const conf = await w.call('POST', `/datos/cuentas/${id}/salidas`, {
       cookie: dueno,
-      body: { monto: 40, motivo: 'Proveedor', pin: '1234', confirmar_repetida: true },
+      form: salida({ confirmar_repetida: '1' }, new Uint8Array([...PNG, 42])),
     });
     expect(conf.status).toBe(201);
     const v = await w.call('GET', `/datos/cuentas/${id}`, { cookie: dueno });
     expect(v.data.resumen.total_cent).toBe(-8000);
+    const hist = await w.call('GET', `/datos/cuentas/${id}/comprobantes?vista=historial`, { cookie: dueno });
+    expect(hist.data.comprobantes[0]).toMatchObject({ tipo: 'salida', comercio: 'Ferretería', categoria: 'proveedores', tiene_archivo: 1 });
+  });
+});
+
+describe('gastos de la comisión', () => {
+  it('llevan ticket, no pasan de lo disponible, no repiten ticket y suman por categoría', async () => {
+    const { w, dueno, cliente, slug, id } = await escenario();
+    await w.call('POST', `/datos/pagar/${slug}/subir`, { cookie: cliente, form: w.captura({ monto: '1000', confirmacion: 'J9001' }) });
+    const k = (await w.call('GET', `/datos/cuentas/${id}/comprobantes`, { cookie: dueno })).data.comprobantes[0];
+    await w.call('POST', `/datos/cuentas/${id}/revisar`, { cookie: dueno, body: { ids: [k.id], accion: 'aprobar', pin: '1234' } });
+
+    let c = await w.call('GET', `/datos/cuentas/${id}/comision`, { cookie: dueno });
+    expect(c.data).toMatchObject({ generada_cent: 2000, gastada_cent: 0, disponible_cent: 2000 });
+
+    const sinTicket = new FormData();
+    sinTicket.append('monto', '5');
+    sinTicket.append('pin', '1234');
+    expect((await w.call('POST', `/datos/cuentas/${id}/comision/gastos`, { cookie: dueno, form: sinTicket })).data.error).toBe('ticket_requerido');
+
+    const ticket = (monto: string, cat: string, n: number) =>
+      w.captura({ monto, pin: '1234', comercio: 'Super', categoria: cat }, new Uint8Array([...PNG, 60, n]));
+    expect((await w.call('POST', `/datos/cuentas/${id}/comision/gastos`, { cookie: dueno, form: ticket('8', 'supermercado', 1) })).status).toBe(201);
+    expect((await w.call('POST', `/datos/cuentas/${id}/comision/gastos`, { cookie: dueno, form: ticket('3', 'supermercado', 1) })).data.error).toBe('ticket_repetido');
+    expect((await w.call('POST', `/datos/cuentas/${id}/comision/gastos`, { cookie: dueno, form: ticket('50', 'gasolina', 2) })).data.error).toBe('comision_insuficiente');
+    expect((await w.call('POST', `/datos/cuentas/${id}/comision/gastos`, { cookie: dueno, form: ticket('4', 'gasolina', 3) })).status).toBe(201);
+
+    c = await w.call('GET', `/datos/cuentas/${id}/comision`, { cookie: dueno });
+    expect(c.data).toMatchObject({ gastada_cent: 1200, disponible_cent: 800 });
+    expect(c.data.por_categoria_mes).toEqual([
+      { categoria: 'supermercado', total_cent: 800, cantidad: 1 },
+      { categoria: 'gasolina', total_cent: 400, cantidad: 1 },
+    ]);
+    const g = c.data.gastos[0];
+    expect((await w.call('GET', `/datos/gasto-archivo/${g.id}`, { cookie: dueno })).status).toBe(200);
+    expect((await w.call('GET', `/datos/gasto-archivo/${g.id}`, { cookie: cliente })).status).toBe(404);
+    expect((await w.call('GET', `/datos/cuentas/${id}/comision`, { cookie: cliente })).status).toBe(404);
+  });
+
+  it('la IA lee el ticket para llenar el formulario', async () => {
+    const { w, dueno, id } = await escenario({ GEMINI_API_KEY: 'clave' });
+    w.setGemini({ merchant: 'Supermercado X', total: '80.25', date: '2026-10-28', category: 'supermercado', summary: 'Compras' });
+    const r = await w.call('POST', `/datos/cuentas/${id}/leer-ticket`, { cookie: dueno, form: w.captura() });
+    expect(r.data).toMatchObject({ lectura_ia: true, lectura: { comercio: 'Supermercado X', total_cent: 8025, categoria: 'supermercado' } });
   });
 });
 
@@ -195,7 +254,7 @@ describe('equipo', () => {
     const ok = await w.call('POST', `/datos/cuentas/${id}/revisar`, { cookie: val, body: { ids: [k.id], accion: 'aprobar', pin: '5678' } });
     expect(ok.data.hechos).toEqual([k.id]);
 
-    const salida = await w.call('POST', `/datos/cuentas/${id}/salidas`, { cookie: val, body: { monto: 5, motivo: 'X', pin: '5678' } });
+    const salida = await w.call('POST', `/datos/cuentas/${id}/salidas`, { cookie: val, form: w.captura({ monto: '5', motivo: 'Xx', pin: '5678' }, new Uint8Array([...PNG, 77])) });
     expect(salida.status).toBe(403);
 
     const equipo = await w.call('GET', `/datos/cuentas/${id}/equipo`, { cookie: dueno });

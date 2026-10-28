@@ -75,6 +75,8 @@ export interface Comprobante {
   pagador: string | null;
   beneficiario: string | null;
   motivo: string | null;
+  comercio: string | null;
+  categoria: string | null;
   lectura: 'ia' | 'manual' | null;
   tiene_archivo: number;
   creado_en: number;

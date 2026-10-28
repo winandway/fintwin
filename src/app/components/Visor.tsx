@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useI18n } from '../lib/i18n';
 
 /** Visor de la captura DENTRO de la app (nunca en otra pestaña: en el celular atrapa a la persona). */
-export function Visor({ id, onCerrar }: { id: string | null; onCerrar: () => void }) {
+export function Visor({ id, onCerrar, ruta = '/datos/archivo/' }: { id: string | null; onCerrar: () => void; ruta?: string }) {
   const { t } = useI18n();
   useEffect(() => {
     if (!id) return;
@@ -17,7 +17,7 @@ export function Visor({ id, onCerrar }: { id: string | null; onCerrar: () => voi
       <button onClick={onCerrar} aria-label={t('common.close')} className="absolute right-3 top-3 rounded-full bg-white/10 p-2 text-white">
         <X className="h-6 w-6" />
       </button>
-      <img src={`/datos/archivo/${id}`} alt={t('account.viewReceipt')} className="max-h-full max-w-full rounded-lg object-contain" />
+      <img src={`${ruta}${id}`} alt={t('account.viewReceipt')} className="max-h-full max-w-full rounded-lg object-contain" />
     </div>
   );
 }

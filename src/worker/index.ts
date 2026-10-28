@@ -2,6 +2,7 @@ import * as auth from './auth';
 import * as cuentas from './cuentas';
 import type { Env } from './env';
 import { HttpError, json, Router, withSecurityHeaders, type Ctx } from './http';
+import * as gastos from './gastos';
 import * as pagar from './pagar';
 
 declare const __VERSION__: string;
@@ -26,6 +27,10 @@ export const router = new Router()
   .on('GET', '/datos/cuentas/:id/comprobantes', cuentas.listarComprobantes)
   .on('POST', '/datos/cuentas/:id/revisar', cuentas.revisar)
   .on('POST', '/datos/cuentas/:id/salidas', cuentas.registrarSalida)
+  .on('POST', '/datos/cuentas/:id/leer-ticket', gastos.leerTicketEndpoint)
+  .on('GET', '/datos/cuentas/:id/comision', gastos.verComision)
+  .on('POST', '/datos/cuentas/:id/comision/gastos', gastos.registrarGasto)
+  .on('GET', '/datos/gasto-archivo/:id', gastos.verArchivoGasto)
   .on('POST', '/datos/cuentas/:id/ajustes', cuentas.ajustesCuenta)
   .on('POST', '/datos/cuentas/:id/link', cuentas.rotarLink)
   .on('POST', '/datos/cuentas/:id/mi-pin', cuentas.cambiarMiPin)
