@@ -1,0 +1,10 @@
+# Lo que genera Bubblewrap/Gradle al compilar: no va al repo.
+*.aab
+*.apk
+*.idsig
+.gradle/
+app/build/
+build/
+local.properties
+manifest-checksum.txt
+store_icon.png
