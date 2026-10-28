@@ -43,3 +43,24 @@ atada a la dirección que abre.
 5. Antes de guardar una captura: tipo real (solo imágenes) y menos de 10 MB.
 6. Página fija para borrar la cuenta, en inglés: `/delete-account`.
 7. Rutas del servidor bajo `/datos`, nunca `/api/`.
+
+## Segunda respuesta (28 oct 2026): sitio creado
+
+- ✅ Sitio `fintwin` activo en https://fintwin.sitios.dev (plan Galaxia, base y almacén). Comprobado con `estado_del_sitio`.
+- ✅ Llave de IA en `~/.config/fintwin/yadominios-llave-ia` y token del sitio en
+  `~/.config/fintwin/yadominios-token-sitio` (los dos 600, nunca al repo).
+- Llave: `POST https://yapanel.yadominios.com/api/sitio/v1/<herramienta>` con
+  `Authorization: Bearer <llave>`. También MCP en `/api/sitio/mcp`.
+  Herramientas: `estado_del_sitio`, `leer_registro`, `consultar_base`, `leer_correos`,
+  `guardar_variable {clave, valor, secreto}`, `listar_variables`, `subir_archivo` (10 MB).
+- Las variables se aplican al **republicar**.
+- Dominios libres: getfintwin.com (14 USD/año, recomendado), usefintwin.com (14), fintwin.io (68).
+  Sin dominio, el correo a usuarios responde `from_ajeno` o `dominio_sin_activar`: no es un fallo del código.
+- `schema.sql` va en la **raíz de yapanel-build** (el Action lo copia). Se ejecuta entero
+  cuando cambia su huella: todo `IF NOT EXISTS`, `ALTER TABLE ADD COLUMN` al final,
+  nunca `DROP` ni `DELETE`. Correcciones de datos únicas, por `consultar_base`.
+- Las excepciones del `_worker.js` no llegan al registro: guardarlas en una tabla propia.
+- Límites: `_worker.js` 10 MB comprimido / 64 MB sin comprimir; estáticos 25 MB por archivo;
+  20 GB entre base y almacén; 300 correos al día. En yapanel-build solo lo compilado.
+- Turnstile solo sirve en web o WebView (la app es TWA, así que sí sirve). Widget en la
+  cuenta de Cloudflare de Windoce, con hosts fintwin.sitios.dev y el dominio final.
