@@ -1,0 +1,42 @@
+# FinTwin — qué hacer cuando Google apruebe la 1.0.0
+
+Preparado el 28 oct 2026. La 1.0.0 que está en revisión abre `windoce.com/app`.
+La **1.1.0** ya está construida y firmada, y abre **https://fintwin.windoce.com**.
+Se sube como actualización de la misma ficha (paquete `com.windoce.ingresos`).
+
+## Lo que ya está listo
+
+- ✅ FinTwin independiente en vivo en https://fintwin.windoce.com (base, archivos y correo propios).
+- ✅ Todas las reglas nuevas de Windoce Hub llevadas a FinTwin:
+  - toda salida exige factura;
+  - los gastos de la comisión llevan su ticket, leído por IA, con la contabilidad por categoría;
+  - aviso cuando una salida deja el total en contra, y el total en rojo;
+  - la guía de la captura con el número de confirmación;
+  - el freno de repetidos.
+- ✅ `assetlinks.json` publicado en fintwin.windoce.com con las mismas huellas de la 1.0.0.
+- ✅ Archivo para subir: `FinTwin-1.1.0.aab` (código de versión 2), en
+  `Documentos/Windoce-respaldos/fintwin-android/`.
+
+## Pasos el día que Google apruebe
+
+1. **Usuario de prueba para el revisor en la app nueva.** La 1.0.0 usaba un usuario
+   de windoce.com, que no existe en FinTwin independiente. Hay que crear uno en
+   fintwin.windoce.com, con su cuenta y su PIN, y actualizar las instrucciones del
+   revisor en Play Console. Lo crea Richard, o la IA con su visto bueno.
+2. **Play Console → Producción → Crear versión →** subir `FinTwin-1.1.0.aab`.
+3. **Notas de la versión** (copiar tal cual):
+   - en-US: `New home for FinTwin: faster, with receipts required on every outflow and commission expenses read by AI.`
+   - es-419: `FinTwin estrena casa: más rápida, con factura obligatoria en cada salida y gastos de la comisión leídos por IA.`
+4. **Ficha y contenido de la app:** cambiar «Borrar cuenta» a
+   `https://fintwin.windoce.com/delete-account`. La política de privacidad sigue en
+   `https://windoce.com/privacy/`.
+5. **Revisar** que la app abra sin barra de dirección arriba. Si aparece, falta una
+   huella en `public/.well-known/assetlinks.json` de FinTwin.
+
+## Lo que hay que saber
+
+- Las cuentas que alguien haya creado dentro de la 1.0.0 (en windoce.com) **no pasan
+  solas** a la app nueva: son dos sistemas distintos. Los clientes de siempre
+  (Bley, Frygood) siguen en sus links de windoce.com, sin cambios.
+- La lectura con IA en FinTwin necesita la clave `GEMINI_API_KEY` en el sitio. Sin
+  ella, todo funciona: la persona escribe el monto y el número a mano.
