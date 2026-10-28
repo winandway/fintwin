@@ -15,6 +15,10 @@ npx -y @bubblewrap/cli@1.27.0 update --skipVersionUpgrade
 #    clases que la librería de la ventana web busca por nombre). Es una app
 #    chica; el tamaño no cambia nada.
 sed -i '' 's/minifyEnabled true/minifyEnabled false/' app/build.gradle
+# La versión sale siempre de twa-manifest.json (bubblewrap no la toca con --skipVersionUpgrade).
+VN=$(grep '"appVersionName"' twa-manifest.json | sed 's/.*: *"\(.*\)".*/\1/')
+VC=$(grep '"appVersionCode"' twa-manifest.json | sed 's/[^0-9]//g')
+sed -i '' "s/versionName \".*\"/versionName \"$VN\"/; s/versionCode [0-9]*/versionCode $VC/" app/build.gradle
 echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties
 
 # 3) Compila y firma el .aab para Google Play.
