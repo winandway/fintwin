@@ -19,10 +19,12 @@ Se sube como actualización de la misma ficha (paquete `com.windoce.ingresos`).
 
 ## Pasos el día que Google apruebe
 
-1. **Usuario de prueba para el revisor en la app nueva.** La 1.0.0 usaba un usuario
-   de windoce.com, que no existe en FinTwin independiente. Hay que crear uno en
-   fintwin.windoce.com, con su cuenta y su PIN, y actualizar las instrucciones del
-   revisor en Play Console. Lo crea Richard, o la IA con su visto bueno.
+1. ✅ **Usuario del revisor en la app nueva (hecho el 28 oct 2026):** el mismo correo
+   (go+fintwin@windoce.com) y la misma contraseña de la 1.0.0, ya confirmado. Es
+   el mismo usuario, copiado a la base de FinTwin. La contraseña está en
+   `~/.config/windoce-hub/fintwin-reviewer`. Solo hay que cambiar las instrucciones
+   del revisor en Play Console (Contenido de la app → Acceso a la app) por:
+   `Open the app and tap "Sign in". Use the test email and password below. Tap "New account", give it a name and a 4-digit PIN of your choice. Inside the account you will see its receipts, totals and the menu (⋮) with Payment link and QR, Team, Record outflow and Commission expenses. Share the payment link to upload a sample receipt, then approve it with the PIN.`
 2. **Play Console → Producción → Crear versión →** subir `FinTwin-1.1.0.aab`.
 3. **Notas de la versión** (copiar tal cual):
    - en-US: `New home for FinTwin: faster, with receipts required on every outflow and commission expenses read by AI.`
