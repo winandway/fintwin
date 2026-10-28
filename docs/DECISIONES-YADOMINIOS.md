@@ -64,3 +64,14 @@ atada a la dirección que abre.
   20 GB entre base y almacén; 300 correos al día. En yapanel-build solo lo compilado.
 - Turnstile solo sirve en web o WebView (la app es TWA, así que sí sirve). Widget en la
   cuenta de Cloudflare de Windoce, con hosts fintwin.sitios.dev y el dominio final.
+
+## Tercera respuesta (28 oct 2026): sin comprar dominio
+
+- Richard decidió NO comprar dominio. Se usa **fintwin.windoce.com** (subdominio de la empresa).
+- YaDominios lo conectó (zona en la misma cuenta de Cloudflare): registro A `fintwin` → 192.0.2.1
+  con proxy. ✅ https://fintwin.windoce.com responde 200.
+- Correo activado bajo el subdominio (SPF, DKIM y MX de rebotes en `cf-bounce.fintwin`,
+  DMARC `p=reject`). No toca el Google Workspace de windoce.com. Prueba enviada y entregada.
+- ✅ `MAIL_FROM = no-reply@fintwin.windoce.com` cargada con la llave y sitio republicado.
+- Dirección oficial en assetlinks.json, enlaces de correos y la app: fintwin.windoce.com.
+  fintwin.sitios.dev sigue respondiendo; si se quiere, 301 por cabecera Host en el `_worker.js`.

@@ -11,7 +11,8 @@ Windoce Hub.
 - Carpeta: `~/FinTwin`. Repositorio público `winandway/fintwin`.
 - Ramas: `main` (código) y `yapanel-build` (lo que publica el panel; la llena el Action).
 - Sitio de YaDominios Cloud: `fintwin` (cuenta torplanet1@gmail.com, plan Galaxia).
-  Dirección provisional: https://fintwin.sitios.dev
+  Dirección OFICIAL: https://fintwin.windoce.com (también responde fintwin.sitios.dev).
+  Correo: no-reply@fintwin.windoce.com (variable MAIL_FROM ya cargada).
 - Llave de Acceso para IA: `~/.config/fintwin/yadominios-llave-ia` (600). Nunca al repo.
 - NO se usa Supabase, ni la base de Windoce Hub, ni la llave de Tumbite.
 
