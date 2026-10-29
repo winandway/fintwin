@@ -1,4 +1,6 @@
-# FinTwin — qué hacer cuando Google apruebe la 1.0.0
+# FinTwin — versión 1.1.0 enviada a Google Play
+
+**Estado (29 oct 2026): la 1.1.0 ENVIADA A REVISIÓN.** Richard pidió no esperar la aprobación de la 1.0.0. Al enviar, Google reinició la revisión que estaba en curso desde el 28 oct, y ahora revisa directamente la 1.1.0 junto con las instrucciones nuevas del revisor y la URL nueva para borrar la cuenta (https://fintwin.windoce.com/delete-account). Las notas de la versión van en en-US, es-419 y es-US.
 
 Preparado el 28 oct 2026. La 1.0.0 que está en revisión abre `windoce.com/app`.
 La **1.1.0** ya está construida y firmada, y abre **https://fintwin.windoce.com**.
