@@ -110,6 +110,24 @@ describe('link de pago', () => {
   });
 });
 
+describe('avisos al celular', () => {
+  it('avisa al equipo cuando entra una captura, en su idioma, y no a otros', async () => {
+    const { w, dueno, cliente, slug } = await escenario();
+    const token = 'ExponentPushToken[abc123]';
+    expect((await w.call('POST', '/datos/yo/dispositivo', { cookie: dueno, body: { token: 'cualquier-cosa' } })).status).toBe(400);
+    expect((await w.call('POST', '/datos/yo/dispositivo', { cookie: dueno, body: { token, plataforma: 'ios' } })).status).toBe(200);
+    await w.call('POST', '/datos/yo/dispositivo', { cookie: cliente, body: { token: 'ExponentPushToken[cliente]' } });
+    await w.call('POST', `/datos/pagar/${slug}/subir`, { cookie: cliente, form: w.captura({ monto: '75', confirmacion: 'K1234' }) });
+    expect(w.avisos).toHaveLength(1);
+    expect(w.avisos[0]).toMatchObject({ to: token });
+    expect(w.avisos[0]!.title).toContain('Sucursal Centro');
+    expect(w.avisos[0]!.body).toContain('$75.00');
+    await w.call('POST', '/datos/yo/dispositivo/quitar', { cookie: dueno, body: { token } });
+    await w.call('POST', `/datos/pagar/${slug}/subir`, { cookie: cliente, form: w.captura({ monto: '5', confirmacion: 'K5678' }, new Uint8Array([...PNG, 99])) });
+    expect(w.avisos).toHaveLength(1);
+  });
+});
+
 describe('revisión con PIN', () => {
   it('aprueba en lote, calcula la comisión y suma el total', async () => {
     const { w, cliente, slug, dueno, id } = await escenario();

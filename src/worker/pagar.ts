@@ -3,6 +3,7 @@ import { exigirUsuario, registrarError } from './auth';
 import { newId, sha256Hex } from './crypto';
 import { HttpError, json, type Ctx } from './http';
 import { racionar } from './limites';
+import { avisarCapturaNueva } from './avisos';
 import { iaDisponible, leerCaptura, type Lectura } from './ocr';
 
 const TIPOS: { mime: string; ext: string; firma: (b: Uint8Array) => boolean }[] = [
@@ -132,6 +133,7 @@ export async function subirCaptura(ctx: Ctx): Promise<Response> {
     if (String(e).includes('UNIQUE')) throw new HttpError(409, 'confirmacion_repetida');
     throw e;
   }
+  await avisarCapturaNueva(ctx.env, cuenta, lectura.monto_cent, u.nombre, ctx.now);
   return json({ ok: true, id, lectura: { ...lectura, modo } }, 201);
 }
 

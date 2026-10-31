@@ -14,6 +14,7 @@ export const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0
 
 export function crearMundo(extra: Partial<Env> = {}) {
   const correos: Correo[] = [];
+  const avisos: { to: string; title: string; body: string }[] = [];
   let gemini: unknown = null;
   const bucket = crearBucket();
   const env = {
@@ -43,6 +44,11 @@ export function crearMundo(extra: Partial<Env> = {}) {
         const b = JSON.parse(String(init?.body)) as { to: { address: string }[]; subject: string; text: string };
         correos.push({ to: b.to[0]!.address, subject: b.subject, text: b.text });
         return new Response('{"ok":true}');
+      }
+      if (u.includes('exp.host')) {
+        const lista = JSON.parse(String(init?.body)) as { to: string; title: string; body: string }[];
+        avisos.push(...lista);
+        return new Response(JSON.stringify({ data: lista.map(() => ({ status: 'ok' })) }));
       }
       if (u.includes('generativelanguage.googleapis.com')) {
         return new Response(
@@ -99,6 +105,7 @@ export function crearMundo(extra: Partial<Env> = {}) {
     env,
     bucket,
     correos,
+    avisos,
     call,
     tokenDe,
     usuario,

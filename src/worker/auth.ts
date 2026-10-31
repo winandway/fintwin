@@ -294,6 +294,7 @@ export async function borrarUsuario(ctx: Ctx): Promise<Response> {
     db.prepare('DELETE FROM beneficiarios WHERE usuario_id = ?').bind(u.id),
     db.prepare('DELETE FROM sesiones WHERE usuario_id = ?').bind(u.id),
     db.prepare('DELETE FROM tokens WHERE usuario_id = ?').bind(u.id),
+    db.prepare('DELETE FROM dispositivos WHERE usuario_id = ?').bind(u.id),
     db.prepare(
       `UPDATE usuarios SET email = ?, nombre = 'Deleted user', clave_hash = '', confirmado_en = NULL, borrado_en = ?
        WHERE id = ?`,

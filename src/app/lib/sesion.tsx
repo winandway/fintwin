@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api, type Usuario } from './api';
 import { limpiarBorradores } from './borrador';
+import { alNativo, esApp, guardarToken, tokenGuardado } from './nativo';
 import { useI18n } from './i18n';
 
 interface Ctx {
@@ -46,7 +47,28 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usuario?.id]);
 
+  // En la app de celular: al entrar se pide permiso de avisos y el celular manda su token.
+  useEffect(() => {
+    if (!esApp() || cargando) return;
+    alNativo({ tipo: 'sesion', conectado: Boolean(usuario) });
+    if (!usuario) return;
+    const alToken = (e: Event) => {
+      const detalle = (e as CustomEvent<{ token: string; plataforma: 'ios' | 'android' }>).detail;
+      if (!detalle?.token) return;
+      guardarToken(detalle.token);
+      void api.post('/yo/dispositivo', detalle).catch(() => undefined);
+    };
+    window.addEventListener('fintwin-push', alToken);
+    return () => window.removeEventListener('fintwin-push', alToken);
+  }, [usuario, cargando]);
+
   const salir = useCallback(async () => {
+    // Este celular deja de recibir avisos de la cuenta que se cierra.
+    const token = tokenGuardado();
+    if (token) {
+      await api.post('/yo/dispositivo/quitar', { token }).catch(() => undefined);
+      guardarToken(null);
+    }
     try {
       await api.post('/auth/salir');
     } catch {

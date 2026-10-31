@@ -1,4 +1,4 @@
-import { ArrowLeft, Copy, Download, RefreshCw, Trash2, UserMinus, UserPlus } from 'lucide-react';
+import { ArrowLeft, Copy, Download, RefreshCw, Share2, Trash2, UserMinus, UserPlus } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { MenuPuntos } from '../components/MenuPuntos';
 import { Aviso, Boton, Cargando, Modal, Pagina, Tarjeta } from '../components/ui';
 import { api, type CuentaDetalle } from '../lib/api';
 import { useI18n, useMensajeError } from '../lib/i18n';
+import { compartir, esApp } from '../lib/nativo';
 
 function Copiable({ texto }: { texto: string }) {
   const { t } = useI18n();
@@ -99,14 +100,20 @@ export function PayLink() {
       <Tarjeta className="space-y-4">
         <p className="text-sm text-tenue">{t('link.text')}</p>
         <Copiable texto={link} />
+        <Boton className="w-full" onClick={() => void compartir(t('link.shareText', { name: detalle.cuenta.nombre }), link)}>
+          <Share2 className="h-4 w-4" aria-hidden /> {t('link.share')}
+        </Boton>
         {qr && (
           <div className="flex flex-col items-center gap-3">
             <img src={qr} alt="QR" className="w-56 rounded-xl bg-white p-2" />
-            <a href={qr} download={`fintwin-${detalle.cuenta.nombre}.png`}>
-              <Boton variante="secundario">
-                <Download className="h-4 w-4" aria-hidden /> {t('link.download')}
-              </Boton>
-            </a>
+            {/* En la app el QR se muestra para escanearlo en pantalla; descargar es cosa del navegador. */}
+            {!esApp() && (
+              <a href={qr} download={`fintwin-${detalle.cuenta.nombre}.png`}>
+                <Boton variante="secundario">
+                  <Download className="h-4 w-4" aria-hidden /> {t('link.download')}
+                </Boton>
+              </a>
+            )}
           </div>
         )}
         {aviso && <Aviso tipo="exito">{aviso}</Aviso>}

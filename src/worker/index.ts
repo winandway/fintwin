@@ -1,4 +1,5 @@
 import * as auth from './auth';
+import * as avisos from './avisos';
 import * as cuentas from './cuentas';
 import type { Env } from './env';
 import { HttpError, json, Router, withSecurityHeaders, type Ctx } from './http';
@@ -21,6 +22,8 @@ export const router = new Router()
   .on('GET', '/datos/yo', auth.yo)
   .on('POST', '/datos/yo/idioma', auth.cambiarIdioma)
   .on('POST', '/datos/yo/borrar', auth.borrarUsuario)
+  .on('POST', '/datos/yo/dispositivo', avisos.registrarDispositivo)
+  .on('POST', '/datos/yo/dispositivo/quitar', avisos.quitarDispositivo)
   .on('GET', '/datos/cuentas', cuentas.listarCuentas)
   .on('POST', '/datos/cuentas', cuentas.crearCuenta)
   .on('GET', '/datos/cuentas/:id', cuentas.verCuenta)
