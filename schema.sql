@@ -146,3 +146,12 @@ CREATE TABLE IF NOT EXISTS gastos_comision (
   creado_en INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS gastos_comision_cuenta ON gastos_comision (cuenta_id, creado_en);
+
+-- 31 oct 2026: celulares que reciben avisos (app de iPhone/Android). Un token por celular.
+CREATE TABLE IF NOT EXISTS dispositivos (
+  token TEXT PRIMARY KEY,
+  usuario_id TEXT NOT NULL,
+  plataforma TEXT,
+  actualizado_en INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS dispositivos_usuario ON dispositivos (usuario_id);
