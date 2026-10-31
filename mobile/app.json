@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "FinTwin",
+    "slug": "fintwin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "fintwin",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0b1220",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.windoce.fintwin",
+      "infoPlist": {
+        "NSCameraUsageDescription": "FinTwin uses the camera so you can take a photo of a payment receipt or a purchase ticket and record it.",
+        "NSPhotoLibraryUsageDescription": "FinTwin uses your photos so you can choose a payment receipt or a purchase ticket and record it.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.windoce.fintwin",
+      "adaptiveIcon": {
+        "backgroundColor": "#0b1220",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      }
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0b1220"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#22c55e"
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "owner": "windoce-llc",
+    "extra": {
+      "eas": {
+        "projectId": "3933d24c-8bf5-432c-93f9-5449f4623c6a"
+      }
+    }
+  }
+}

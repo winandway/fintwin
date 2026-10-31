@@ -1,0 +1,20 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "production": {
+      "autoIncrement": true,
+      "node": "24.15.0"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleTeamId": "7KM9P6R682",
+        "ascAppId": "6829195734"
+      }
+    }
+  }
+}
