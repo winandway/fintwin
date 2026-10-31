@@ -86,3 +86,7 @@ la respuesta es reforzar esas funciones, no discutir.
 
 - Apple revisa en uno a tres días y avisa a go@windoce.com.
 - Apple no cancela la revisión si se sube otra compilación a TestFlight; Google sí.
+
+## Estado
+
+- 31 de octubre de 2026: versión 1.0 (compilación 3) enviada a revisión, en `WAITING_FOR_REVIEW`.
