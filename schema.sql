@@ -155,3 +155,37 @@ CREATE TABLE IF NOT EXISTS dispositivos (
   actualizado_en INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS dispositivos_usuario ON dispositivos (usuario_id);
+
+-- 1 nov 2026: casos de ayuda dentro de la app. Los contesta el gerente de correo por
+-- /datos/gerente (con su secreto). Las capturas van al almacén y se ven con enlace firmado.
+CREATE TABLE IF NOT EXISTS casos (
+  id TEXT PRIMARY KEY,
+  usuario_id TEXT NOT NULL,
+  asunto TEXT NOT NULL,
+  estado TEXT NOT NULL CHECK (estado IN ('abierto', 'respondido', 'cerrado')),
+  creado_en INTEGER NOT NULL,
+  actualizado_en INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS casos_usuario ON casos (usuario_id, actualizado_en);
+CREATE INDEX IF NOT EXISTS casos_estado ON casos (estado, actualizado_en);
+
+CREATE TABLE IF NOT EXISTS caso_mensajes (
+  id TEXT PRIMARY KEY,
+  caso_id TEXT NOT NULL,
+  de TEXT NOT NULL CHECK (de IN ('cliente', 'soporte')),
+  texto TEXT NOT NULL,
+  plantilla TEXT,
+  creado_en INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS caso_mensajes_caso ON caso_mensajes (caso_id, creado_en);
+
+CREATE TABLE IF NOT EXISTS caso_adjuntos (
+  id TEXT PRIMARY KEY,
+  caso_id TEXT NOT NULL,
+  mensaje_id TEXT NOT NULL,
+  nombre TEXT NOT NULL,
+  tipo TEXT NOT NULL,
+  clave TEXT NOT NULL,
+  creado_en INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS caso_adjuntos_caso ON caso_adjuntos (caso_id);
