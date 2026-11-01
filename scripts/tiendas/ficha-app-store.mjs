@@ -138,10 +138,13 @@ const revision = {
   demoAccountPassword: claveRevisor,
   demoAccountRequired: true,
   notes: [
-    'FinTwin is a business record-keeping tool: companies collect payment receipts from their clients, AI reads them, duplicates are blocked and the team approves them with a personal PIN. It does not move or hold money.',
-    'Sign in with the account above. Tap "New account" (a ledger inside the app, not a new user), type any name and any 4-digit PIN.',
-    'Native features: push notifications when a client uploads a receipt, the iOS share sheet for the payment link (menu ⋮ → Payment link and QR → Share link), camera and photo library to attach receipts, invoices and purchase tickets, and an offline screen.',
-    'Users can delete their account in the app (account menu → Delete my user). Support: go@windoce.com.',
+    'PURPOSE AND AUDIENCE: FinTwin is a record-keeping tool for small businesses (stores, service companies, agencies) that get paid by bank transfer. Their clients send a screenshot of the transfer receipt; FinTwin records the amount, blocks duplicates, and the team approves each receipt with a personal PIN. It solves lost or repeated receipts and keeps a clean income history per business. FinTwin does NOT move, hold or transfer money; payments happen outside the app, at the client\'s own bank.',
+    'HOW TO TEST: sign in with the demo account above (it already has a sample business account, "Demo Store", with one approved and one pending receipt). Main flow: 1) tap "Demo Store" to see its income and pending receipts; 2) menu ⋮ → Payment link and QR → Share link (iOS share sheet); 3) open that link, attach any receipt image and send it: it appears as pending and a push notification arrives; 4) approve it with the PIN 1234; 5) "New account" creates another ledger with any name and any 4-digit PIN. Registration: "Create account" on the sign-in screen (a confirmation email is sent). Account deletion: account menu → Delete my user (asks for the password).',
+    'SCREEN RECORDING: a recording made on a physical iPhone with the current iOS is attached to our reply in App Review.',
+    'EXTERNAL SERVICES: YaDominios Cloud (hosting, database, file storage and transactional email, run by Windoce LLC); Google Gemini API (optional AI reading of the receipt; when it is not enabled, the payer types the amount and the confirmation number shown on the receipt); Apple Push Notification service through Expo (push notifications). No payment processors, no ads, no analytics or tracking SDKs, no in-app purchases.',
+    'REGIONS: the app works the same in every region; there are no regional differences in features or content. English and Spanish.',
+    'REGULATION: FinTwin is not a bank, wallet or payment service and does not process payments, so no financial license applies. It shows no third-party protected content.',
+    'Support: go@windoce.com.',
   ].join('\n'),
 };
 const det = await asc('GET', `/v1/appStoreVersions/${version.id}/appStoreReviewDetail`).catch(() => null);
