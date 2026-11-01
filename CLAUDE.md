@@ -21,6 +21,11 @@ Windoce Hub.
 Lee [docs/CONTRATO-YADOMINIOS.md](docs/CONTRATO-YADOMINIOS.md) y
 [docs/DECISIONES-YADOMINIOS.md](docs/DECISIONES-YADOMINIOS.md) antes de tocar nada.
 
+## Estado y pendientes
+
+Lo que falta, en orden, está en [PENDIENTES.md](PENDIENTES.md). Tiendas: [docs/PUBLICAR-EN-APPLE.md](docs/PUBLICAR-EN-APPLE.md)
+y [docs/LISTO-PARA-GOOGLE.md](docs/LISTO-PARA-GOOGLE.md). Llaves de Apple y Expo en `~/.config/fintwin/`.
+
 ## Las tres personas
 
 1. **La empresa:** crea su usuario, sus cuentas con PIN y comparte su link de pago o QR.
