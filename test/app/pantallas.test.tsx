@@ -70,3 +70,25 @@ describe('guía de la captura', () => {
     expect(screen.getByText('Tu captura tiene que verse así')).toBeInTheDocument();
   });
 });
+
+describe('link de pago', () => {
+  it('deja abrir la página de pago dentro de la app, para que el dueño la pruebe', async () => {
+    const { api } = await import('../../src/app/lib/api');
+    const { PayLink } = await import('../../src/app/pages/Equipo');
+    const { MemoryRouter, Route, Routes } = await import('react-router-dom');
+    vi.spyOn(api, 'get').mockResolvedValue({
+      cuenta: { id: 'c1', nombre: 'Demo Store', comision_pct: 0, link_slug: 'abc123' },
+      rol: 'dueno',
+    } as never);
+    render(
+      <MemoryRouter initialEntries={['/accounts/c1/link']}>
+        <Routes>
+          <Route path="/accounts/:id/link" element={<PayLink />} />
+        </Routes>
+      </MemoryRouter>,
+      { wrapper: conIdioma('en') },
+    );
+    const abrir = await screen.findByText('Open payment page');
+    expect(abrir.closest('a')).toHaveAttribute('href', '/pay/abc123');
+  });
+});

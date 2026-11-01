@@ -1,0 +1,44 @@
+# Video para Apple: FinTwin en un iPhone de verdad
+
+Apple rechazó la primera entrega (guía 2.1, «falta información»). No dijo que la app tenga fallos: pide un
+video grabado en un iPhone físico, que empiece abriendo la app y muestre el uso normal, incluidos el registro,
+la entrada y el borrado del usuario. Todo lo demás que pidió ya está respondido en las notas de revisión.
+
+Duración ideal: dos o tres minutos. Sin hablar; no hace falta audio.
+
+## Antes de grabar (una sola vez)
+
+1. En el iPhone, instala **TestFlight** desde el App Store.
+2. Abre el correo de invitación de TestFlight que llegó a go@windoce.com («FinTwin: Receipts & Income») y toca
+   **Ver en TestFlight** → **Instalar**. Si no lo ves, abre TestFlight con tu Apple ID: la app aparece ahí.
+3. Activa la grabación de pantalla: Ajustes → Centro de control → agrega **Grabación de pantalla**.
+4. Ten a mano una captura cualquiera en tus fotos (sirve la imagen «recibo-de-muestra» de esta carpeta, pásala
+   al iPhone por AirDrop).
+5. Pon el iPhone en **inglés** si puedes (Apple revisa en inglés). Si no, en español también vale.
+
+## Lo que se graba, en este orden
+
+1. Desliza el Centro de control → **Grabar**. Ve a la pantalla de inicio.
+2. **Abre FinTwin** tocando su ícono (el video tiene que empezar así).
+3. **Registro:** toca «Create account», escribe tu nombre, un correo nuevo (por ejemplo
+   go+video@windoce.com) y una contraseña. Envía.
+4. Abre el **correo de confirmación** en la app Mail del iPhone, toca el enlace y vuelve a FinTwin.
+5. **Entrar:** «Sign in» con ese correo y esa contraseña.
+6. **Crear una cuenta de negocio:** «New account» → nombre «Demo Shop» → PIN 4321 → crear.
+7. Toca **Demo Shop** → menú de tres puntos → «Payment link and QR» → **Share link**. Que se vea la hoja de
+   compartir del iPhone; ciérrala.
+8. Abre el link de pago (botón de abrir el link dentro de esa pantalla) → adjunta la captura de tus fotos →
+   escribe monto 85.50 y número de confirmación TRX48219554 → envía. Si sale el permiso de fotos o de avisos,
+   toca **Permitir**.
+9. Vuelve a Demo Shop: el comprobante aparece **pendiente**. Márcalo y **apruébalo** con el PIN 4321.
+10. **Borrar el usuario:** menú de la cuenta → «Delete my user» → escribe la contraseña → confirmar. Que se vea
+    que te saca de la app.
+11. Detén la grabación desde el Centro de control. El video queda en Fotos.
+
+## Después
+
+Mándame el video por **AirDrop a la Mac** (queda en Descargas). Yo lo adjunto en la respuesta a Apple y
+vuelvo a enviar la app a revisión. No hagas nada más en App Store Connect.
+
+No uses la cuenta del revisor (go+fintwin@windoce.com) para grabar: el paso 10 la borraría y Apple no podría
+entrar.

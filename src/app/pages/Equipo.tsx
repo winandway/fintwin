@@ -1,4 +1,4 @@
-import { ArrowLeft, Copy, Download, RefreshCw, Share2, Trash2, UserMinus, UserPlus } from 'lucide-react';
+import { ArrowLeft, Copy, Download, ExternalLink, RefreshCw, Share2, Trash2, UserMinus, UserPlus } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -103,6 +103,13 @@ export function PayLink() {
         <Boton className="w-full" onClick={() => void compartir(t('link.shareText', { name: detalle.cuenta.nombre }), link)}>
           <Share2 className="h-4 w-4" aria-hidden /> {t('link.share')}
         </Boton>
+        {detalle && (
+          <Link to={`/pay/${detalle.cuenta.link_slug}`} className="block">
+            <Boton variante="secundario" className="w-full">
+              <ExternalLink className="h-4 w-4" aria-hidden /> {t('link.open')}
+            </Boton>
+          </Link>
+        )}
         {qr && (
           <div className="flex flex-col items-center gap-3">
             <img src={qr} alt="QR" className="w-56 rounded-xl bg-white p-2" />
