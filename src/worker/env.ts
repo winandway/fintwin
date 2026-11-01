@@ -12,6 +12,10 @@ export interface Env {
   GEMINI_API_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
+  /** Secreto de la puerta del gerente de correo (casos de ayuda). Sin él, la puerta no existe. */
+  GERENTE_SECRETO?: string;
+  /** Llave con la que se firman los enlaces de las capturas de los casos de ayuda. */
+  ARCHIVOS_FIRMA?: string;
 }
 
 export const APP_URL_DEFAULT = 'https://fintwin.windoce.com';

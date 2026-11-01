@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "fintwin", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:todo"], "port": 5175 }
+  ]
+}

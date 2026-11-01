@@ -5,8 +5,10 @@ import { Cargando } from './components/ui';
 import { I18nProvider } from './lib/i18n';
 import { SesionProvider, useSesion } from './lib/sesion';
 import { Account } from './pages/Account';
+import { Help, HelpCase } from './pages/Ayuda';
 import { Commission } from './pages/Comision';
 import { Confirm, Forgot, Login, Reset, SignUp } from './pages/Auth';
+import { DocsGuia, DocsIndex } from './pages/Docs';
 import { PayLink, Team } from './pages/Equipo';
 import { Home, NewAccount } from './pages/Home';
 import { DeleteAccount, Invite, Landing, NotFound, Pay } from './pages/Publicas';
@@ -45,6 +47,12 @@ export function Rutas() {
         <Route path="/accounts/:id/link" element={<ConSesion><PayLink /></ConSesion>} />
         <Route path="/accounts/:id/team" element={<ConSesion><Team /></ConSesion>} />
         <Route path="/accounts/:id/commission" element={<ConSesion><Commission /></ConSesion>} />
+        <Route path="/help" element={<ConSesion><Help /></ConSesion>} />
+        <Route path="/help/:id" element={<ConSesion><HelpCase /></ConSesion>} />
+        <Route path="/docs" element={<DocsIndex />} />
+        <Route path="/docs/:slug" element={<DocsGuia />} />
+        <Route path="/es/docs" element={<DocsIndex />} />
+        <Route path="/es/docs/:slug" element={<DocsGuia />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>

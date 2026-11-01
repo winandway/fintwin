@@ -4,6 +4,7 @@ import { correoConfirmar, correoRestablecer, enviarCorreo } from './correo';
 import { hashSecret, newId, randomToken, sha256Hex, verifySecret } from './crypto';
 import type { Env } from './env';
 import { clientIp, getCookie, HttpError, json, readJson, type Ctx } from './http';
+import { borrarCasosDe } from './casos';
 import { exigirNoBloqueado, limpiarIntentos, racionar, sumarIntento } from './limites';
 
 export const COOKIE = 'ft_sesion';
@@ -272,7 +273,8 @@ export async function cambiarIdioma(ctx: Ctx): Promise<Response> {
 /**
  * Borrar mi usuario (lo exige Google Play). Se borran sus datos personales y sus
  * sesiones; sus cuentas propias se archivan. Los comprobantes que mandó a otra
- * empresa quedan en el registro de esa empresa, sin su nombre ni su correo.
+ * empresa quedan en el registro de esa empresa, sin su nombre ni su correo. Sus casos de
+ * ayuda y sus capturas se borran.
  */
 export async function borrarUsuario(ctx: Ctx): Promise<Response> {
   const u = await exigirUsuario(ctx);
@@ -287,7 +289,9 @@ export async function borrarUsuario(ctx: Ctx): Promise<Response> {
     throw new HttpError(401, 'credenciales');
   }
   const db = ctx.env.DB;
+  const casos = await borrarCasosDe(ctx.env, u.id);
   await db.batch([
+    ...casos,
     db.prepare('UPDATE cuentas SET archivada_en = ? WHERE dueno_id = ? AND archivada_en IS NULL').bind(ctx.now, u.id),
     db.prepare('DELETE FROM miembros WHERE cuenta_id IN (SELECT id FROM cuentas WHERE dueno_id = ?)').bind(u.id),
     db.prepare('DELETE FROM miembros WHERE usuario_id = ?').bind(u.id),

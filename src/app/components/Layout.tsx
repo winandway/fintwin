@@ -1,4 +1,4 @@
-import { ChevronDown, LogOut, Trash2, UserRound } from 'lucide-react';
+import { ChevronDown, LifeBuoy, LogOut, Trash2, UserRound } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../lib/i18n';
@@ -31,6 +31,13 @@ function MenuCuenta() {
       {abierto && (
         <div className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-borde bg-panel p-1.5 shadow-xl">
           <p className="truncate px-3 py-2 text-xs text-tenue">{usuario.email}</p>
+          <Link
+            to="/help"
+            onClick={() => setAbierto(false)}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm hover:bg-white/5"
+          >
+            <LifeBuoy className="h-4 w-4" aria-hidden /> {t('nav.help')}
+          </Link>
           <button onClick={() => void salir()} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-white/5">
             <LogOut className="h-4 w-4" aria-hidden /> {t('nav.signOut')}
           </button>
@@ -49,7 +56,7 @@ function MenuCuenta() {
 
 export function Layout({ children }: { children: ReactNode }) {
   const { usuario } = useSesion();
-  const { t } = useI18n();
+  const { t, idioma } = useI18n();
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b border-borde bg-fondo/95 backdrop-blur">
@@ -76,6 +83,9 @@ export function Layout({ children }: { children: ReactNode }) {
           <a href="https://windoce.com/privacy/" target="_blank" rel="noopener noreferrer" className="hover:text-white">
             {t('footer.privacy')}
           </a>
+          <Link to={idioma === 'es' ? '/es/docs' : '/docs'} className="hover:text-white">
+            {t('docs.title')}
+          </Link>
           <Link to="/delete-account" className="hover:text-white">
             {t('footer.delete')}
           </Link>

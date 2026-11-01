@@ -85,3 +85,20 @@ export interface Comprobante {
   subido_por_email: string | null;
   revisado_por_nombre: string | null;
 }
+
+export type EstadoCaso = 'abierto' | 'respondido' | 'cerrado';
+
+export interface CasoLista {
+  id: string;
+  numero: string;
+  asunto: string;
+  estado: EstadoCaso;
+  actualizado_en: number;
+}
+
+export interface MensajeCaso {
+  de: 'cliente' | 'soporte';
+  fecha: string;
+  texto: string;
+  adjuntos: { nombre: string; tipo: string; url: string | null }[];
+}

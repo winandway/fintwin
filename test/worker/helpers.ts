@@ -62,9 +62,9 @@ export function crearMundo(extra: Partial<Env> = {}) {
   async function call(
     method: string,
     path: string,
-    opts: { body?: unknown; cookie?: string; form?: FormData; sinCabecera?: boolean } = {},
+    opts: { body?: unknown; cookie?: string; form?: FormData; sinCabecera?: boolean; headers?: Record<string, string> } = {},
   ) {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = { ...opts.headers };
     if (!opts.sinCabecera) headers['x-fintwin'] = '1';
     if (opts.cookie) headers.cookie = opts.cookie;
     let body: BodyInit | undefined;

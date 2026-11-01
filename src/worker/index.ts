@@ -1,5 +1,6 @@
 import * as auth from './auth';
 import * as avisos from './avisos';
+import * as casos from './casos';
 import * as cuentas from './cuentas';
 import type { Env } from './env';
 import { HttpError, json, Router, withSecurityHeaders, type Ctx } from './http';
@@ -47,7 +48,14 @@ export const router = new Router()
   .on('GET', '/datos/pagar/:slug', pagar.verLinkDePago)
   .on('POST', '/datos/pagar/:slug/subir', pagar.subirCaptura)
   .on('GET', '/datos/mis-pagos', pagar.misPagos)
-  .on('GET', '/datos/archivo/:id', pagar.verArchivo);
+  .on('GET', '/datos/archivo/:id', pagar.verArchivo)
+  .on('GET', '/datos/casos', casos.misCasos)
+  .on('POST', '/datos/casos', casos.crearCaso)
+  .on('GET', '/datos/casos/:id', casos.verCaso)
+  .on('POST', '/datos/casos/:id/mensajes', casos.escribirEnCaso)
+  .on('GET', '/datos/adjuntos/:id', casos.verAdjunto)
+  .on('GET', '/datos/gerente/tickets', casos.gerenteTickets)
+  .on('POST', '/datos/gerente/tickets/:id/responder', casos.gerenteResponder);
 
 /** Canario: cada pieza dice ok o error. Sin valores secretos. */
 async function salud(ctx: Ctx): Promise<Response> {
@@ -66,6 +74,7 @@ async function salud(ctx: Ctx): Promise<Response> {
   }
   piezas.correo = ctx.env.SITIO_TOKEN && ctx.env.MAIL_FROM ? 'ok' : 'error';
   piezas.lectura_ia = ctx.env.GEMINI_API_KEY ? 'ok' : 'apagado';
+  piezas.soporte = ctx.env.GERENTE_SECRETO && ctx.env.ARCHIVOS_FIRMA ? 'ok' : 'apagado';
   piezas.turnstile = ctx.env.TURNSTILE_SECRET_KEY && ctx.env.TURNSTILE_SITE_KEY ? 'ok' : 'apagado';
   const ok = piezas.base === 'ok' && piezas.almacen === 'ok' && piezas.correo === 'ok';
   return json({ ok, version: VERSION, piezas }, ok ? 200 : 503);
@@ -79,8 +88,11 @@ async function datos(req: Request, env: Env, url: URL): Promise<Response> {
   const ctx: Ctx = { req, env, url, params: {}, now: Date.now() };
   try {
     // Contra peticiones de otros sitios: toda escritura lleva la cabecera propia de la app,
-    // que un formulario ajeno no puede poner sin permiso del navegador.
-    if (req.method !== 'GET' && req.headers.get('x-fintwin') !== '1') throw new HttpError(403, 'origen_invalido');
+    // que un formulario ajeno no puede poner sin permiso del navegador. La puerta del gerente
+    // no usa cookie sino su secreto en «Authorization», que el navegador nunca agrega solo.
+    const conSecreto = url.pathname.startsWith('/datos/gerente/');
+    if (req.method !== 'GET' && !conSecreto && req.headers.get('x-fintwin') !== '1')
+      throw new HttpError(403, 'origen_invalido');
     const m = router.match(req.method, url.pathname);
     if (!m) throw new HttpError(404, 'no_existe');
     ctx.params = m.params;

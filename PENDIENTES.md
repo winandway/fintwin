@@ -21,6 +21,7 @@
   lectura con IA está apagada y quien paga escribe el monto y el número a mano. No hay ninguna llave de
   Gemini válida guardada en la máquina.
 - [ ] 👤 **Richard crea su propia cuenta en FinTwin** para comprobar que llegan los correos.
+- [x] Casos de ayuda en la app y puerta del gerente de correo (1 nov 2026). Guía pública en Docs.
 - [ ] Turnstile apagado (faltan las claves), guía pública en Docs.
 
 ## Cuenta del revisor (Apple y Google)

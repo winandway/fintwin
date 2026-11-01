@@ -7,6 +7,8 @@ export interface Correo {
   subject: string;
   text: string;
   html: string;
+  /** A quién le llega si la persona contesta el correo. */
+  replyTo?: string;
 }
 
 export function appUrl(env: Env): string {
@@ -55,6 +57,38 @@ export function correoRestablecer(env: Env, to: string, nombre: string, token: s
   return { to, subject, text: `${cuerpo}\n\n${enlace}\n\n${pie}`, html: plantilla(subject, cuerpo, boton, enlace, pie) };
 }
 
+export const CORREO_SOPORTE = 'soporte+fintwin@windoce.com';
+
+function escapar(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+}
+
+export function correoRespuestaCaso(
+  env: Env,
+  to: string,
+  nombre: string,
+  caso: { id: string; numero: string },
+  texto: string,
+  idioma: Idioma,
+): Correo {
+  const enlace = `${appUrl(env)}/help/${caso.id}`;
+  const es = idioma === 'es';
+  const subject = es ? `Te respondimos tu caso ${caso.numero}` : `We replied to your case ${caso.numero}`;
+  const saludo = es ? `Hola, ${nombre}.` : `Hi ${nombre},`;
+  const boton = es ? 'Ver mi caso' : 'Open my case';
+  const pie = es
+    ? 'Puedes contestar dentro de FinTwin, en Ayuda, o responder a este correo.'
+    : 'You can answer inside FinTwin, under Help, or reply to this email.';
+  const cuerpo = `${escapar(saludo)}<br><br>${escapar(texto).replace(/\n/g, '<br>')}`;
+  return {
+    to,
+    subject,
+    text: `${saludo}\n\n${texto}\n\n${enlace}\n\n${pie}`,
+    html: plantilla(escapar(subject), cuerpo, boton, enlace, pie),
+    replyTo: CORREO_SOPORTE,
+  };
+}
+
 /** Envía por la API de correo de YaDominios Cloud. Devuelve false si falló (y lo deja escrito). */
 export async function enviarCorreo(env: Env, correo: Correo): Promise<boolean> {
   if (!env.SITIO_TOKEN || !env.MAIL_FROM) {
@@ -73,6 +107,7 @@ export async function enviarCorreo(env: Env, correo: Correo): Promise<boolean> {
         subject: correo.subject,
         text: correo.text,
         html: correo.html,
+        ...(correo.replyTo ? { reply_to: correo.replyTo } : {}),
       }),
       signal: AbortSignal.timeout(15000),
     });

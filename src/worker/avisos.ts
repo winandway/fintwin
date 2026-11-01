@@ -77,3 +77,47 @@ export async function avisarCapturaNueva(
     await registrarError(env, 'avisos', `expo push: ${String(e)}`, now);
   }
 }
+
+/** Avisa a los celulares de una persona. Dice qué pasó: nunca falla en silencio. */
+export async function avisarUsuario(
+  env: Env,
+  usuarioId: string,
+  aviso: { titulo: string; cuerpo: string; url: string },
+  now: number,
+): Promise<'ok' | 'error' | 'sin_app'> {
+  const { results } = await env.DB.prepare('SELECT token FROM dispositivos WHERE usuario_id = ?')
+    .bind(usuarioId)
+    .all<{ token: string }>();
+  if (!results.length) return 'sin_app';
+  try {
+    const mensajes = results.map((r) => ({
+      to: r.token,
+      sound: 'default',
+      title: aviso.titulo,
+      body: aviso.cuerpo,
+      data: { url: aviso.url },
+    }));
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(mensajes),
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = (await res.json().catch(() => ({}))) as { data?: { status?: string; details?: { error?: string } }[] };
+    const estados = data.data ?? [];
+    for (const [i, d] of estados.entries()) {
+      const t = mensajes[i]?.to;
+      if (t && d.details?.error === 'DeviceNotRegistered')
+        await env.DB.prepare('DELETE FROM dispositivos WHERE token = ?').bind(t).run();
+    }
+    if (!res.ok) {
+      await registrarError(env, 'avisos', `expo push ${res.status}`, now);
+      return 'error';
+    }
+    if (estados.some((d) => d.status === 'ok')) return 'ok';
+    return estados.every((d) => d.details?.error === 'DeviceNotRegistered') ? 'sin_app' : 'error';
+  } catch (e) {
+    await registrarError(env, 'avisos', `expo push: ${String(e)}`, now);
+    return 'error';
+  }
+}

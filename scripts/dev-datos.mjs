@@ -21,6 +21,8 @@ const env = {
   APP_URL: 'http://localhost:5175',
   MAIL_FROM: 'no-reply@fintwin.windoce.com',
   SITIO_TOKEN: 'local',
+  ARCHIVOS_FIRMA: 'firma-local',
+  GERENTE_SECRETO: 'gerente-local',
 };
 
 const fetchReal = globalThis.fetch;
