@@ -27,7 +27,7 @@ Duración ideal: dos o tres minutos. Sin hablar; no hace falta audio.
 6. **Crear una cuenta de negocio:** «New account» → nombre «Demo Shop» → PIN 4321 → crear.
 7. Toca **Demo Shop** → menú de tres puntos → «Payment link and QR» → **Share link**. Que se vea la hoja de
    compartir del iPhone; ciérrala.
-8. Abre el link de pago (botón de abrir el link dentro de esa pantalla) → adjunta la captura de tus fotos →
+8. En esa misma pantalla toca **Open payment page** → adjunta la captura de tus fotos →
    escribe monto 85.50 y número de confirmación TRX48219554 → envía. Si sale el permiso de fotos o de avisos,
    toca **Permitir**.
 9. Vuelve a Demo Shop: el comprobante aparece **pendiente**. Márcalo y **apruébalo** con el PIN 4321.
