@@ -98,7 +98,7 @@ describe('casos de ayuda de la persona', () => {
   it('al borrar el usuario se borran sus casos y sus capturas', async () => {
     const { w, ana, gerente } = await escenario();
     await abrirCaso(w, ana);
-    await w.call('POST', '/datos/yo/borrar', { cookie: ana, body: { clave: 'clave-segura-1' } });
+    await w.call('POST', '/datos/yo/borrar', { cookie: ana, body: { clave: 'clave-segura-1', confirmar: 'BORRAR' } });
     expect(w.bucket.store.size).toBe(0);
     expect((await gerente('GET', '/datos/gerente/tickets?estado=todos')).data.tickets).toEqual([]);
   });

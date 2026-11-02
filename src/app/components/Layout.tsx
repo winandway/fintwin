@@ -1,4 +1,4 @@
-import { ChevronDown, LifeBuoy, LogOut, Trash2, UserRound } from 'lucide-react';
+import { ChevronDown, LifeBuoy, LogOut, UserRound } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../lib/i18n';
@@ -38,16 +38,17 @@ function MenuCuenta() {
           >
             <LifeBuoy className="h-4 w-4" aria-hidden /> {t('nav.help')}
           </Link>
+          <Link
+            to="/profile"
+            onClick={() => setAbierto(false)}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm hover:bg-white/5"
+          >
+            <UserRound className="h-4 w-4" aria-hidden /> {t('nav.profile')}
+          </Link>
+          <div className="my-1 border-t border-borde" />
           <button onClick={() => void salir()} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-white/5">
             <LogOut className="h-4 w-4" aria-hidden /> {t('nav.signOut')}
           </button>
-          <Link
-            to="/delete-account"
-            onClick={() => setAbierto(false)}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-red-300 hover:bg-white/5"
-          >
-            <Trash2 className="h-4 w-4" aria-hidden /> {t('nav.deleteUser')}
-          </Link>
         </div>
       )}
     </div>

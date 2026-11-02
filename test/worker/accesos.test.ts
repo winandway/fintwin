@@ -163,7 +163,7 @@ describe('el link de pago sin cuenta: solo el nombre', () => {
     expect(r.status).toBe(201);
     const sube = await w.call('POST', `/datos/pagar/${slug}/subir`, { cookie: r.cookie, form: w.captura({ monto: '5', confirmacion: 'QQ998877' }, new Uint8Array([...PNG, 7])) });
     expect(sube.status).toBe(201);
-    const borra = await w.call('POST', '/datos/yo/borrar', { cookie: r.cookie, body: {} });
+    const borra = await w.call('POST', '/datos/yo/borrar', { cookie: r.cookie, body: { confirmar: 'borrar' } });
     expect(borra.status).toBe(200);
     expect((await w.call('GET', '/datos/yo', { cookie: r.cookie })).data.usuario).toBeNull();
   });

@@ -29,7 +29,7 @@ está en `src/pages/PayerUploadPage.tsx` y la lectura con IA en `supabase/functi
 | Exportar movimientos (todo el histórico) | menú de la cuenta → «Exportar movimientos» |
 | Bandeja «Por revisar»: miniatura, «Sin número de confirmación», «Por link de pago», «En espera», «La captura dice $X», seleccionar todos con su total, aprobar o rechazar en lote con PIN y motivo opcional | `pages/Revisar.tsx` → `Review` |
 | «Clientes que te pagan» con buscador, total aprobado, por revisar y rechazados | `pages/Revisar.tsx` → `Clients` |
-| Inicio: «Total registrado en tus cuentas», aviso ámbar de pendientes, cada cuenta con «N por revisar» o «Al día» y su menú (Por revisar, Link de pago, Clientes, Abrir cuenta), «A quién le pago» con «Pagar», «Mis pagos enviados», menú con Actualizar, Cerrar sesión y Borrar mi usuario | `pages/Home.tsx` |
+| Inicio: «Total registrado en tus cuentas», aviso ámbar de pendientes, cada cuenta con «N por revisar» o «Al día» y su menú (Por revisar, Link de pago, Clientes, Abrir cuenta), «A quién le pago» con «Pagar», «Mis pagos enviados», menú con Actualizar y Cerrar sesión (borrar el usuario va aparte, en «Mi perfil», dentro de los tres puntos y escribiendo BORRAR) | `pages/Home.tsx` |
 | Link de pago: QR, copiar, WhatsApp con el texto listo, «Exigir número de confirmación», cambiar el link | `pages/Equipo.tsx` → `PayLink` |
 | Pantalla de quien paga: «Le estás pagando a», guía de la captura, «1. Sube la captura del pago», lo leído, recuadro rojo si falta el número, «2. Revisa el monto», nota, «Confirmo que este pago es para…», pie «FinTwin no mueve dinero» | `pages/Publicas.tsx` → `Pay` |
 | Comisión: hoy, ayer, este mes, por día, por mes con lo que queda, por categoría | `pages/Comision.tsx` |

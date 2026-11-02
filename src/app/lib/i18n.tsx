@@ -179,7 +179,7 @@ const en = {
   'status.aprobado': 'Approved',
   'status.rechazado': 'Rejected',
   'delete.title': 'Delete your FinTwin account',
-  'delete.p1': 'You can delete your user at any time, from the app (account menu → Delete my user) or from this page.',
+  'delete.p1': 'You can delete your user at any time, from the app (My profile → ⋮ menu → Delete my user) or from this page.',
   'delete.p2': 'We delete your name, your email, your password, your sessions and your PINs. Accounts you own are closed.',
   'delete.p3': 'Receipts you already sent to a business stay in that business’s records, without your name or email, because they are part of its bookkeeping.',
   'delete.p4': 'Need help? Write to go@windoce.com.',
@@ -536,6 +536,12 @@ const en = {
   'fee.generated': 'Generated',
   'fee.left': 'Left',
   'fee.leftNote': '“Left” is what was accumulated and not spent at the close of each month; it carries over to the next month.',
+  'nav.profile': 'My profile',
+  'profile.noEmail': 'Signed in with an access code',
+  'profile.deleteHint': 'To delete your user, open the ⋮ menu at the top of this page.',
+  'delete.word': 'DELETE',
+  'delete.typeWord': 'Type {word} to confirm',
+  'err.falta_confirmar': 'Type the confirmation word to delete your user.',
 };
 
 type Clave = keyof typeof en;
@@ -717,7 +723,7 @@ const es: Record<Clave, string> = {
   'status.aprobado': 'Aprobado',
   'status.rechazado': 'Rechazado',
   'delete.title': 'Borrar tu cuenta de FinTwin',
-  'delete.p1': 'Puedes borrar tu usuario cuando quieras, desde la app (menú de la cuenta → Borrar mi usuario) o desde esta página.',
+  'delete.p1': 'Puedes borrar tu usuario cuando quieras, desde la app (Mi perfil → menú ⋮ → Borrar mi usuario) o desde esta página.',
   'delete.p2': 'Borramos tu nombre, tu correo, tu contraseña, tus sesiones y tus PIN. Las cuentas de las que eres dueño se cierran.',
   'delete.p3': 'Las capturas que ya mandaste a una empresa quedan en los registros de esa empresa, sin tu nombre ni tu correo, porque son parte de su contabilidad.',
   'delete.p4': '¿Necesitas ayuda? Escribe a go@windoce.com.',
@@ -1074,6 +1080,12 @@ const es: Record<Clave, string> = {
   'fee.generated': 'Generado',
   'fee.left': 'Queda',
   'fee.leftNote': '«Queda» es lo acumulado sin usar al cerrar cada mes; pasa al mes siguiente.',
+  'nav.profile': 'Mi perfil',
+  'profile.noEmail': 'Entraste con un código de acceso',
+  'profile.deleteHint': 'Para borrar tu usuario, abre el menú ⋮ de arriba en esta página.',
+  'delete.word': 'BORRAR',
+  'delete.typeWord': 'Escribe {word} para confirmar',
+  'err.falta_confirmar': 'Escribe la palabra de confirmación para borrar tu usuario.',
 };
 
 const diccionarios: Record<Idioma, Record<Clave, string>> = { en, es };

@@ -1,4 +1,4 @@
-import { Building2, ChevronRight, KeyRound, ListChecks, LogOut, Plus, QrCode, Receipt, RefreshCw, Send, Trash2, Upload, Users, Wallet } from 'lucide-react';
+import { Building2, ChevronRight, KeyRound, ListChecks, LogOut, Plus, QrCode, Receipt, RefreshCw, Send, Upload, Users, Wallet } from 'lucide-react';
 import { MenuPuntos } from '../components/MenuPuntos';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -97,7 +97,6 @@ export function Home() {
           opciones={[
             { texto: t('home.refresh'), icono: <RefreshCw className="h-4 w-4" />, onClick: cargar },
             { texto: t('nav.signOut'), icono: <LogOut className="h-4 w-4" />, onClick: () => void salir() },
-            { texto: t('nav.deleteUser'), icono: <Trash2 className="h-4 w-4" />, onClick: () => navigate('/delete-account'), peligro: true },
           ]}
         />
       </div>

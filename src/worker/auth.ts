@@ -362,9 +362,13 @@ export async function cambiarIdioma(ctx: Ctx): Promise<Response> {
  */
 export async function borrarUsuario(ctx: Ctx): Promise<Response> {
   const u = await exigirUsuario(ctx);
-  // Quien entró con código no tiene contraseña: le basta su sesión abierta.
+  const cuerpo = (await readJson(ctx.req)) as Record<string, unknown>;
+  // Freno contra el toque por error: hay que escribir BORRAR (o DELETE), también quien no tiene contraseña.
+  const palabra = typeof cuerpo.confirmar === 'string' ? cuerpo.confirmar.trim().toUpperCase() : '';
+  if (palabra !== 'BORRAR' && palabra !== 'DELETE') throw new HttpError(400, 'falta_confirmar');
+  // Quien entró con código no tiene contraseña: le basta su sesión abierta y la palabra.
   if (u.sin_correo !== 1) {
-    const { clave } = parse(z.object({ clave: z.string().min(1) }), await readJson(ctx.req));
+    const { clave } = parse(z.object({ clave: z.string().min(1) }), cuerpo);
     const fila = await ctx.env.DB.prepare('SELECT clave_hash FROM usuarios WHERE id = ?')
       .bind(u.id)
       .first<{ clave_hash: string }>();

@@ -103,9 +103,14 @@ describe('usuarios', () => {
     const w = crearMundo();
     const cookie = await w.usuario('g@example.com');
     await w.call('POST', '/datos/cuentas', { cookie, body: { nombre: 'Tienda', pin: '1234' } });
-    const mal = await w.call('POST', '/datos/yo/borrar', { cookie, body: { clave: 'mala' } });
+    // Sin escribir BORRAR no se borra nada, aunque la contraseña sea la correcta.
+    const sinPalabra = await w.call('POST', '/datos/yo/borrar', { cookie, body: { clave: 'clave-segura-1' } });
+    expect(sinPalabra.status).toBe(400);
+    expect(sinPalabra.data.error).toBe('falta_confirmar');
+    expect((await w.call('GET', '/datos/yo', { cookie })).status).toBe(200);
+    const mal = await w.call('POST', '/datos/yo/borrar', { cookie, body: { clave: 'mala', confirmar: 'BORRAR' } });
     expect(mal.status).toBe(401);
-    const r = await w.call('POST', '/datos/yo/borrar', { cookie, body: { clave: 'clave-segura-1' } });
+    const r = await w.call('POST', '/datos/yo/borrar', { cookie, body: { clave: 'clave-segura-1', confirmar: 'DELETE' } });
     expect(r.status).toBe(200);
     const entra = await w.call('POST', '/datos/auth/entrar', { body: { email: 'g@example.com', clave: 'clave-segura-1' } });
     expect(entra.status).toBe(401);

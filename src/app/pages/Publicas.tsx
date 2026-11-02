@@ -373,16 +373,18 @@ export function DeleteAccount() {
   const msg = useMensajeError();
   const { usuario } = useSesion();
   const [clave, setClave] = useState('');
+  const [palabra, setPalabra] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [hecho, setHecho] = useState(false);
+  const palabraOk = palabra.trim().toUpperCase() === t('delete.word');
 
   async function borrar(e: FormEvent) {
     e.preventDefault();
     setEnviando(true);
     setError('');
     try {
-      await api.post('/yo/borrar', usuario?.sin_correo ? {} : { clave });
+      await api.post('/yo/borrar', usuario?.sin_correo ? { confirmar: palabra } : { clave, confirmar: palabra });
       limpiarBorradores();
       setHecho(true);
       setTimeout(() => window.location.assign('/'), 2500);
@@ -415,8 +417,18 @@ export function DeleteAccount() {
                 <CampoClave etiqueta={t('field.password')} required autoComplete="current-password" value={clave} onChange={(e) => setClave(e.target.value)} />
               </>
             )}
+            <Campo
+              etiqueta={t('delete.typeWord', { word: t('delete.word') })}
+              placeholder={t('delete.word')}
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              value={palabra}
+              onChange={(e) => setPalabra(e.target.value)}
+              data-testid="palabra-borrar"
+            />
             {error && <Aviso tipo="error">{error}</Aviso>}
-            <Boton type="submit" variante="peligro" cargando={enviando} className="w-full">
+            <Boton type="submit" variante="peligro" cargando={enviando} disabled={!palabraOk} className="w-full">
               {t('delete.button')}
             </Boton>
           </form>

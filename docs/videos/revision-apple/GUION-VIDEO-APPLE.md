@@ -34,7 +34,8 @@ Duración ideal: dos o tres minutos. Sin hablar; no hace falta audio.
    sale el permiso de fotos o de avisos, toca **Permitir**.
 8. Vuelve a Demo Shop: el comprobante aparece en «Movements» con el punto naranja (pendiente). Tócalo para
    abrirlo → **Confirm** → PIN 4321. El punto se pone verde y el total sube.
-9. **Borrar el usuario:** menú de tu nombre → «Delete my user» → escribe la contraseña → confirmar. Que se vea
+9. **Borrar el usuario:** menú de tu nombre → «My profile» → los tres puntos de arriba → «Delete my user» →
+   escribe la contraseña y la palabra DELETE → confirmar. Que se vea
    que te saca de la app.
 10. **Sign in** no hace falta grabarlo aparte: el paso 4 ya entra. Si quieres, antes del paso 9 toca
     «Sign out» y vuelve a entrar con el correo y la contraseña.
