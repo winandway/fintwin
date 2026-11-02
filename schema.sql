@@ -209,3 +209,37 @@ CREATE TABLE IF NOT EXISTS accesos (
 );
 CREATE INDEX IF NOT EXISTS accesos_cuenta ON accesos (cuenta_id);
 CREATE INDEX IF NOT EXISTS accesos_usuario ON accesos (usuario_id);
+
+-- 1 nov 2026: igual al FinTwin original (Windoce Hub).
+-- Las repetidas ya no se frenan con un índice único: se AVISAN con su historial y, si el uso
+-- anterior es de otra cuenta, se pueden aceptar con el PIN («Aceptar igual»). En la misma cuenta
+-- nunca entran dos veces. Quitar el índice no borra ningún dato.
+DROP INDEX IF EXISTS comprobantes_confirmacion_unica;
+DROP INDEX IF EXISTS comprobantes_archivo_unico;
+CREATE INDEX IF NOT EXISTS comprobantes_confirmacion ON comprobantes (confirmacion_norm);
+CREATE INDEX IF NOT EXISTS comprobantes_archivo ON comprobantes (archivo_hash);
+-- Notas de quien sube y del que pone en espera.
+ALTER TABLE comprobantes ADD COLUMN notas TEXT;
+-- «En espera»: aprobado que todavía no se da por bueno. Vuelve a pendiente con esta marca, no
+-- cuenta en el total y se libera aprobándolo con el PIN.
+ALTER TABLE comprobantes ADD COLUMN en_espera INTEGER NOT NULL DEFAULT 0;
+-- Lo que leyó la IA, completo, como en el original.
+ALTER TABLE comprobantes ADD COLUMN pagador_correo TEXT;
+ALTER TABLE comprobantes ADD COLUMN beneficiario_correo TEXT;
+ALTER TABLE comprobantes ADD COLUMN plataforma TEXT;
+ALTER TABLE comprobantes ADD COLUMN confianza REAL;
+ALTER TABLE comprobantes ADD COLUMN lectura_estado TEXT;
+ALTER TABLE comprobantes ADD COLUMN monto_leido_cent INTEGER;
+-- Por dónde entró: 'link' (link de pago) o 'cuenta' (registrado dentro de la cuenta).
+ALTER TABLE comprobantes ADD COLUMN via TEXT;
+-- El link de pago puede exigir o no el número de confirmación (nace exigiéndolo).
+ALTER TABLE cuentas ADD COLUMN exigir_confirmacion INTEGER NOT NULL DEFAULT 1;
+
+-- Cada lectura con IA queda guardada por la huella de la imagen: se lee al elegir la foto y,
+-- al enviar, se reutiliza sin pagar otra lectura.
+CREATE TABLE IF NOT EXISTS lecturas_ia (
+  hash TEXT PRIMARY KEY,
+  datos TEXT NOT NULL,
+  estado TEXT NOT NULL,
+  creado_en INTEGER NOT NULL
+);
