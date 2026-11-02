@@ -21,6 +21,9 @@
   lectura con IA está apagada y quien paga escribe el monto y el número a mano. No hay ninguna llave de
   Gemini válida guardada en la máquina.
 - [ ] 👤 **Richard crea su propia cuenta en FinTwin** para comprobar que llegan los correos.
+- [x] Entrada simple (1 nov 2026): el correo se confirma con un código de 6 números dentro de la app; el dueño
+  agrega a quien sube o revisa con un código de acceso (sin correo); el link de pago pide solo el nombre. Guía en
+  Docs «Agrega a tu equipo con un código de acceso». El guion del video de Apple quedó con este flujo.
 - [x] Casos de ayuda en la app y puerta del gerente de correo (1 nov 2026). Guía pública en Docs.
 - [ ] Turnstile apagado (faltan las claves), guía pública en Docs.
 

@@ -1,4 +1,4 @@
-import { CheckCircle2, ImagePlus, ReceiptText, ShieldCheck, Users } from 'lucide-react';
+import { CheckCircle2, ImagePlus, KeyRound, ReceiptText, ShieldCheck, Users } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CaptureGuide } from '../components/CaptureGuide';
@@ -28,6 +28,11 @@ export function Landing() {
               {t('landing.have')}
             </Boton>
           </Link>
+          <Link to="/access">
+            <Boton variante="secundario" className="w-full">
+              <KeyRound className="h-4 w-4" aria-hidden /> {t('landing.code')}
+            </Boton>
+          </Link>
         </div>
       </section>
       <section className="grid gap-3 sm:grid-cols-3">
@@ -52,9 +57,10 @@ export function Pay() {
   const { slug = '' } = useParams();
   const { t, idioma } = useI18n();
   const msg = useMensajeError();
-  const { usuario, cargando } = useSesion();
+  const { usuario, cargando, recargar } = useSesion();
   const location = useLocation();
   const [info, setInfo] = useState<{ valido: boolean; nombre?: string; lectura_ia?: boolean } | null>(null);
+  const invitado = useBorrador(`invitado-${slug}`, 'anonimo', { nombre: '' });
   const [archivo, setArchivo] = useState<File | null>(null);
   const [vista, setVista] = useState('');
   const b = useBorrador(`pagar-${slug}`, usuario?.id ?? 'anonimo', { monto: '', confirmacion: '', fecha: '' });
@@ -76,23 +82,41 @@ export function Pay() {
   const nombre = info.nombre ?? '';
   const siguiente = encodeURIComponent(location.pathname);
 
+  // Sin sesión: basta el nombre. Sin cuenta, sin correo, sin contraseña.
   if (!usuario) {
+    const entrarComoInvitado = async (e: FormEvent) => {
+      e.preventDefault();
+      setEnviando(true);
+      setError('');
+      try {
+        await api.post(`/pagar/${slug}/invitado`, { nombre: invitado.valores.nombre, idioma });
+        invitado.limpiar();
+        await recargar();
+      } catch (err) {
+        setError(msg(err));
+      } finally {
+        setEnviando(false);
+      }
+    };
     return (
       <Pagina angosta>
         <h1 className="text-xl font-bold">{t('pay.title')}</h1>
         <p className="mb-4 text-tenue">{t('pay.for', { name: nombre })}</p>
-        <CaptureGuide payeeName={nombre} />
-        <Tarjeta className="mt-4 space-y-3">
-          <p className="text-sm text-tenue">{t('pay.signIn')}</p>
-          <Link to={`/signup?next=${siguiente}`}>
-            <Boton className="w-full">{t('nav.signUp')}</Boton>
-          </Link>
-          <Link to={`/login?next=${siguiente}`}>
-            <Boton variante="secundario" className="mt-2 w-full">
-              {t('nav.signIn')}
+        <Tarjeta className="mb-4">
+          <form onSubmit={entrarComoInvitado} className="space-y-3">
+            <p className="text-sm text-tenue">{t('pay.signIn')}</p>
+            <AvisoBorrador visible={invitado.recuperado} onEmpezar={invitado.limpiar} />
+            <Campo etiqueta={t('field.name')} required minLength={2} maxLength={80} autoComplete="name" value={invitado.valores.nombre} onChange={(e) => invitado.set('nombre', e.target.value)} />
+            {error && <Aviso tipo="error">{error}</Aviso>}
+            <Boton type="submit" cargando={enviando} className="w-full">
+              {t('common.continue')}
             </Boton>
+          </form>
+          <Link to={`/login?next=${siguiente}`} className="mt-3 block text-center text-sm text-tenue hover:text-white">
+            {t('landing.have')}
           </Link>
         </Tarjeta>
+        <CaptureGuide payeeName={nombre} />
       </Pagina>
     );
   }
@@ -277,7 +301,7 @@ export function DeleteAccount() {
     setEnviando(true);
     setError('');
     try {
-      await api.post('/yo/borrar', { clave });
+      await api.post('/yo/borrar', usuario?.sin_correo ? {} : { clave });
       limpiarBorradores();
       setHecho(true);
       setTimeout(() => window.location.assign('/'), 2500);
@@ -302,8 +326,14 @@ export function DeleteAccount() {
       ) : usuario ? (
         <Tarjeta className="mt-6">
           <form onSubmit={borrar} className="space-y-4">
-            <p className="text-sm">{t('delete.confirmText')}</p>
-            <CampoClave etiqueta={t('field.password')} required autoComplete="current-password" value={clave} onChange={(e) => setClave(e.target.value)} />
+            {usuario.sin_correo ? (
+              <p className="text-sm">{t('delete.confirmNoPass')}</p>
+            ) : (
+              <>
+                <p className="text-sm">{t('delete.confirmText')}</p>
+                <CampoClave etiqueta={t('field.password')} required autoComplete="current-password" value={clave} onChange={(e) => setClave(e.target.value)} />
+              </>
+            )}
             {error && <Aviso tipo="error">{error}</Aviso>}
             <Boton type="submit" variante="peligro" cargando={enviando} className="w-full">
               {t('delete.button')}

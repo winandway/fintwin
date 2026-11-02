@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Cargando } from './components/ui';
 import { I18nProvider } from './lib/i18n';
 import { SesionProvider, useSesion } from './lib/sesion';
+import { Access } from './pages/Acceso';
 import { Account } from './pages/Account';
 import { Help, HelpCase } from './pages/Ayuda';
 import { Commission } from './pages/Comision';
@@ -38,6 +39,7 @@ export function Rutas() {
         <Route path="/forgot" element={<Forgot />} />
         <Route path="/reset" element={<Reset />} />
         <Route path="/confirm" element={<Confirm />} />
+        <Route path="/access" element={<Access />} />
         <Route path="/pay/:slug" element={<Pay />} />
         <Route path="/invite/:token" element={<Invite />} />
         <Route path="/delete-account" element={<DeleteAccount />} />

@@ -31,6 +31,7 @@ export function Campo({
   etiqueta,
   ayuda,
   error,
+  className = '',
   ...rest
 }: InputHTMLAttributes<HTMLInputElement> & { etiqueta: string; ayuda?: string; error?: boolean }) {
   return (
@@ -39,7 +40,7 @@ export function Campo({
       <input
         {...rest}
         aria-invalid={error || undefined}
-        className={`w-full rounded-xl border bg-[#0d1528] px-4 py-3 text-white placeholder:text-tenue/60 outline-none focus:border-marca ${error ? 'border-problema' : 'border-borde'}`}
+        className={`w-full rounded-xl border bg-[#0d1528] px-4 py-3 text-white placeholder:text-tenue/60 outline-none focus:border-marca ${error ? 'border-problema' : 'border-borde'} ${className}`}
       />
       {ayuda && <span className="block text-xs text-tenue">{ayuda}</span>}
     </label>

@@ -1,4 +1,4 @@
-import { BookOpen, LifeBuoy, Search } from 'lucide-react';
+import { BookOpen, LifeBuoy, Rocket, Search } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { buscarGuias, GUIAS, rutaDocs, type Bloque, type IdiomaDocs } from '../lib/docs';
@@ -25,6 +25,11 @@ function useIdiomaDocs(): IdiomaDocs {
   return deUrl;
 }
 
+const SECCIONES = [
+  { id: 'empezar', titulo: 'docs.sectionStart', icono: <Rocket className="h-3.5 w-3.5" aria-hidden /> },
+  { id: 'soporte', titulo: 'docs.sectionSupport', icono: <LifeBuoy className="h-3.5 w-3.5" aria-hidden /> },
+] as const;
+
 function MarcoDocs({ idioma, children }: { idioma: IdiomaDocs; children: ReactNode }) {
   const { t } = useI18n();
   const enlace = ({ isActive }: { isActive: boolean }) =>
@@ -34,16 +39,18 @@ function MarcoDocs({ idioma, children }: { idioma: IdiomaDocs; children: ReactNo
       <NavLink to={rutaDocs(idioma)} end className={enlace}>
         <BookOpen className="h-4 w-4" aria-hidden /> {t('docs.title')}
       </NavLink>
-      <div>
-        <p className="mb-1 flex items-center gap-2 px-3 text-xs font-semibold uppercase tracking-wide text-tenue">
-          <LifeBuoy className="h-3.5 w-3.5" aria-hidden /> {t('docs.sectionSupport')}
-        </p>
-        {GUIAS.filter((g) => g.seccion === 'soporte').map((g) => (
-          <NavLink key={g.slug} to={rutaDocs(idioma, g.slug)} className={enlace}>
-            {g.titulo[idioma]}
-          </NavLink>
-        ))}
-      </div>
+      {SECCIONES.map((s) => (
+        <div key={s.id}>
+          <p className="mb-1 flex items-center gap-2 px-3 text-xs font-semibold uppercase tracking-wide text-tenue">
+            {s.icono} {t(s.titulo)}
+          </p>
+          {GUIAS.filter((g) => g.seccion === s.id).map((g) => (
+            <NavLink key={g.slug} to={rutaDocs(idioma, g.slug)} className={enlace}>
+              {g.titulo[idioma]}
+            </NavLink>
+          ))}
+        </div>
+      ))}
     </nav>
   );
   return (
@@ -97,21 +104,26 @@ export function DocsIndex() {
         />
         <kbd className="hidden rounded border border-borde px-1.5 py-0.5 text-xs text-tenue sm:inline">⌘K</kbd>
       </label>
-      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-tenue">
-        <LifeBuoy className="h-4 w-4" aria-hidden /> {t('docs.sectionSupport')}
-      </h2>
-      {guias.length === 0 ? (
-        <p className="text-sm text-tenue">{t('docs.noResults')}</p>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {guias.map((g) => (
-            <Link key={g.slug} to={rutaDocs(idioma, g.slug)} className="rounded-2xl border border-borde bg-panel p-4 hover:border-tenue">
-              <p className="font-semibold">{g.titulo[idioma]}</p>
-              <p className="mt-1 text-sm text-tenue">{g.resumen[idioma]}</p>
-            </Link>
-          ))}
-        </div>
-      )}
+      {guias.length === 0 && <p className="text-sm text-tenue">{t('docs.noResults')}</p>}
+      {SECCIONES.map((s) => {
+        const deLaSeccion = guias.filter((g) => g.seccion === s.id);
+        if (deLaSeccion.length === 0) return null;
+        return (
+          <section key={s.id} className="mb-6">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-tenue">
+              {s.icono} {t(s.titulo)}
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {deLaSeccion.map((g) => (
+                <Link key={g.slug} to={rutaDocs(idioma, g.slug)} className="rounded-2xl border border-borde bg-panel p-4 hover:border-tenue">
+                  <p className="font-semibold">{g.titulo[idioma]}</p>
+                  <p className="mt-1 text-sm text-tenue">{g.resumen[idioma]}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        );
+      })}
     </MarcoDocs>
   );
 }

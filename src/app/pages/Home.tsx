@@ -1,4 +1,4 @@
-import { ChevronRight, Plus, Receipt, Upload } from 'lucide-react';
+import { Building2, ChevronRight, KeyRound, Plus, Receipt, Upload } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CampoClave } from '../components/CampoClave';
@@ -38,17 +38,54 @@ export function Home() {
         if (r.cuentas.length === 0) setTab('pagos');
       })
       .catch((e) => setError(msg(e)));
-    api.get<MisPagos>('/mis-pagos').then(setPagos).catch(() => undefined);
+    api.get<MisPagos>('/mis-pagos').then(setPagos).catch(() => setPagos({ empresas: [], comprobantes: [] }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (error) return <Pagina><Aviso tipo="error">{error}</Aviso></Pagina>;
-  if (!cuentas) return <Cargando />;
+  if (!cuentas || (cuentas.length === 0 && !pagos)) return <Cargando />;
+  const saludo = <h1 className="mb-4 text-2xl font-bold">{t('home.hi', { name: usuario?.nombre.split(' ')[0] ?? '' })}</h1>;
+  const sinCorreo = Boolean(usuario?.sin_correo);
+
+  // Primera vez: sin negocios ni pagos. Dos caminos claros, sin pestañas vacías.
+  if (cuentas.length === 0 && pagos && pagos.empresas.length === 0 && pagos.comprobantes.length === 0) {
+    return (
+      <Pagina angosta>
+        {saludo}
+        <p className="mb-3 text-tenue">{t('home.welcome')}</p>
+        <div className="space-y-3">
+          {!sinCorreo && (
+            <Link to="/accounts/new" className="block">
+              <Tarjeta className="flex items-start gap-3 hover:border-marca">
+                <Building2 className="mt-0.5 h-6 w-6 shrink-0 text-marca" aria-hidden />
+                <div>
+                  <p className="font-semibold">{t('home.optOwner')}</p>
+                  <p className="text-sm text-tenue">{t('home.optOwnerText')}</p>
+                </div>
+              </Tarjeta>
+            </Link>
+          )}
+          <Link to="/access" className="block">
+            <Tarjeta className="flex items-start gap-3 hover:border-marca">
+              <KeyRound className="mt-0.5 h-6 w-6 shrink-0 text-marca-2" aria-hidden />
+              <div>
+                <p className="font-semibold">{t('home.optCode')}</p>
+                <p className="text-sm text-tenue">{t('home.optCodeText')}</p>
+              </div>
+            </Tarjeta>
+          </Link>
+        </div>
+      </Pagina>
+    );
+  }
+
+  // Quien solo sube capturas no tiene negocios propios: va directo a sus pagos, sin pestañas.
+  const soloPagos = cuentas.length === 0;
 
   return (
     <Pagina>
-      <h1 className="mb-4 text-2xl font-bold">{t('home.hi', { name: usuario?.nombre.split(' ')[0] ?? '' })}</h1>
-      <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl border border-borde bg-panel p-1" role="tablist">
+      {saludo}
+      <div className={`mb-4 grid grid-cols-2 gap-1 rounded-xl border border-borde bg-panel p-1${soloPagos ? ' hidden' : ''}`} role="tablist">
         {(['cuentas', 'pagos'] as const).map((k) => (
           <button
             key={k}
@@ -82,11 +119,13 @@ export function Home() {
               </Tarjeta>
             </Link>
           ))}
-          <Link to="/accounts/new">
-            <Boton variante="secundario" className="mt-2 w-full">
-              <Plus className="h-4 w-4" aria-hidden /> {t('home.newAccount')}
-            </Boton>
-          </Link>
+          {!sinCorreo && (
+            <Link to="/accounts/new">
+              <Boton variante="secundario" className="mt-2 w-full">
+                <Plus className="h-4 w-4" aria-hidden /> {t('home.newAccount')}
+              </Boton>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

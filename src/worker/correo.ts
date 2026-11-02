@@ -29,18 +29,25 @@ function plantilla(titulo: string, cuerpo: string, boton: string, enlace: string
 </td></tr></table></body></html>`;
 }
 
-export function correoConfirmar(env: Env, to: string, nombre: string, token: string, idioma: Idioma): Correo {
+export function correoConfirmar(env: Env, to: string, nombre: string, token: string, codigo: string, idioma: Idioma): Correo {
   const enlace = `${appUrl(env)}/confirm?token=${token}`;
   const es = idioma === 'es';
-  const subject = es ? 'Confirma tu correo en FinTwin' : 'Confirm your email for FinTwin';
+  const subject = es ? `Tu código de FinTwin: ${codigo}` : `Your FinTwin code: ${codigo}`;
   const cuerpo = es
-    ? `Hola, ${nombre}. Toca el botón para confirmar tu correo y empezar a usar FinTwin.`
-    : `Hi ${nombre}, tap the button to confirm your email and start using FinTwin.`;
+    ? `Hola, ${nombre}. Escribe este código en FinTwin para confirmar tu correo:`
+    : `Hi ${nombre}, type this code in FinTwin to confirm your email:`;
+  const otra = es ? 'O toca el botón para confirmarlo desde aquí.' : 'Or tap the button to confirm it from here.';
   const boton = es ? 'Confirmar mi correo' : 'Confirm my email';
   const pie = es
-    ? 'El enlace vence en 48 horas. Si no creaste una cuenta, ignora este correo.'
-    : 'This link expires in 48 hours. If you did not create an account, ignore this email.';
-  return { to, subject, text: `${cuerpo}\n\n${enlace}\n\n${pie}`, html: plantilla(subject, cuerpo, boton, enlace, pie) };
+    ? 'El código y el botón vencen en 48 horas. Si no creaste una cuenta, ignora este correo.'
+    : 'The code and the button expire in 48 hours. If you did not create an account, ignore this email.';
+  const bloque = `${cuerpo}<div style="font-size:32px;font-weight:bold;letter-spacing:8px;font-family:Menlo,Consolas,monospace;color:#0f172a;padding:16px 0">${codigo}</div>${otra}`;
+  return {
+    to,
+    subject,
+    text: `${cuerpo}\n\n${codigo}\n\n${otra}\n${enlace}\n\n${pie}`,
+    html: plantilla(es ? 'Confirma tu correo' : 'Confirm your email', bloque, boton, enlace, pie),
+  };
 }
 
 export function correoRestablecer(env: Env, to: string, nombre: string, token: string, idioma: Idioma): Correo {

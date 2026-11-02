@@ -75,7 +75,8 @@ describe('Docs', () => {
       expect(g.cuerpo.en.length).toBe(g.cuerpo.es.length);
       expect(g.titulo.es).not.toBe(g.titulo.en);
     }
-    expect(buscarGuias('captura', 'es').map((g) => g.slug)).toEqual(['help-cases']);
+    expect(buscarGuias('caso numero', 'es').map((g) => g.slug)).toEqual(['help-cases']);
+    expect(buscarGuias('codigo de acceso', 'es').map((g) => g.slug)).toEqual(['team-access-codes']);
     expect(buscarGuias('CAPTURAS ayuda', 'es')).toHaveLength(1);
     expect(buscarGuias('zzz', 'en')).toEqual([]);
     expect(rutaDocs('es', 'help-cases')).toBe('/es/docs/help-cases');

@@ -13,13 +13,80 @@ export type Bloque =
 
 export interface Guia {
   slug: string;
-  seccion: 'soporte';
+  seccion: 'empezar' | 'soporte';
   titulo: Record<IdiomaDocs, string>;
   resumen: Record<IdiomaDocs, string>;
   cuerpo: Record<IdiomaDocs, Bloque[]>;
 }
 
 export const GUIAS: Guia[] = [
+  {
+    slug: 'team-access-codes',
+    seccion: 'empezar',
+    titulo: { en: 'Add your team with an access code', es: 'Agrega a tu equipo con un código de acceso' },
+    resumen: {
+      en: 'Give each person a code so they can upload receipts or approve them from the app, with no email or password.',
+      es: 'Dale a cada persona un código para que suba capturas o las apruebe desde la app, sin correo ni contraseña.',
+    },
+    cuerpo: {
+      en: [
+        { tipo: 'p', texto: 'Only the person who manages the money needs a FinTwin account with email and password. Everyone else, the person who uploads the payment screenshots and the people who review them, enters the app with a code you give them.' },
+        { tipo: 'h2', texto: 'Two kinds of access' },
+        { tipo: 'lista', items: [
+          'Upload receipts: the person only uploads payment screenshots to your account. They see nothing else.',
+          'Review and approve: the person approves or rejects receipts with their own 4-digit PIN. They cannot record outflows or change settings.',
+        ] },
+        { tipo: 'h2', texto: 'Give someone access, step by step' },
+        { tipo: 'pasos', items: [
+          'Open your account and tap “Add people”.',
+          'Tap “Add a person”, write their name and choose what they will do.',
+          'Confirm with your PIN.',
+          'FinTwin shows a code like ABCD-2345. Tap “Send by WhatsApp” or copy it and send it any way you like.',
+        ] },
+        { tipo: 'imagen', src: '/docs/acceso-agregar-en.png', alt: 'The Add a person window in FinTwin, with the name and the two kinds of access' },
+        { tipo: 'imagen', src: '/docs/acceso-codigo-en.png', alt: 'The access code ready to share, and the list of people with access' },
+        { tipo: 'h2', texto: 'What the other person does' },
+        { tipo: 'pasos', items: [
+          'Download FinTwin, or open it in the browser.',
+          'Tap “I have an access code” and type the code.',
+          'If they will review receipts, they create their own PIN.',
+          'That’s it. Whoever uploads goes straight to the upload screen; whoever reviews goes straight to your account.',
+        ] },
+        { tipo: 'imagen', src: '/docs/acceso-entrar-en.png', alt: 'The FinTwin screen to enter with an access code' },
+        { tipo: 'nota', texto: 'Each code works once and expires in 7 days. If the person changes phones or signs out, open the ⋮ menu next to their name and tap “Give a new code”: they come back to the same access, with their history. To take access away, tap “Remove access” in the same menu.' },
+        { tipo: 'h2', texto: 'And the payment link?' },
+        { tipo: 'p', texto: 'You can still share your payment link or QR with customers who pay you once. They only write their name and upload the screenshot: no account, no password.' },
+      ],
+      es: [
+        { tipo: 'p', texto: 'Solo quien administra el dinero necesita una cuenta de FinTwin con correo y contraseña. Todos los demás, quien sube las capturas de los pagos y quienes las revisan, entran a la app con un código que tú les das.' },
+        { tipo: 'h2', texto: 'Dos tipos de acceso' },
+        { tipo: 'lista', items: [
+          'Subir capturas: la persona solo sube las capturas de los pagos a tu cuenta. No ve nada más.',
+          'Revisar y aprobar: la persona aprueba o rechaza los comprobantes con su propio PIN de 4 números. No registra salidas ni cambia ajustes.',
+        ] },
+        { tipo: 'h2', texto: 'Dale acceso a alguien, paso a paso' },
+        { tipo: 'pasos', items: [
+          'Abre tu cuenta y toca «Agregar personas».',
+          'Toca «Agregar persona», escribe su nombre y elige qué va a hacer.',
+          'Confirma con tu PIN.',
+          'FinTwin te muestra un código como ABCD-2345. Toca «Mandar por WhatsApp» o cópialo y mándalo como quieras.',
+        ] },
+        { tipo: 'imagen', src: '/docs/acceso-agregar-es.png', alt: 'La ventana Agregar persona de FinTwin, con el nombre y los dos tipos de acceso' },
+        { tipo: 'imagen', src: '/docs/acceso-codigo-es.png', alt: 'El código de acceso listo para mandar y la lista de personas con acceso' },
+        { tipo: 'h2', texto: 'Lo que hace la otra persona' },
+        { tipo: 'pasos', items: [
+          'Descarga FinTwin, o lo abre en el navegador.',
+          'Toca «Tengo un código de acceso» y escribe el código.',
+          'Si va a revisar comprobantes, crea su propio PIN.',
+          'Listo. Quien sube entra directo a la pantalla de subir; quien revisa entra directo a tu cuenta.',
+        ] },
+        { tipo: 'imagen', src: '/docs/acceso-entrar-es.png', alt: 'La pantalla de FinTwin para entrar con un código de acceso' },
+        { tipo: 'nota', texto: 'Cada código sirve una vez y vence en 7 días. Si la persona cambia de celular o cierra sesión, abre el menú ⋮ junto a su nombre y toca «Darle un código nuevo»: vuelve al mismo acceso, con su historial. Para quitarle el acceso, toca «Quitar acceso» en el mismo menú.' },
+        { tipo: 'h2', texto: '¿Y el link de pago?' },
+        { tipo: 'p', texto: 'Puedes seguir compartiendo tu link de pago o tu QR con clientes que te pagan una vez. Solo escriben su nombre y suben la captura: sin cuenta y sin contraseña.' },
+      ],
+    },
+  },
   {
     slug: 'help-cases',
     seccion: 'soporte',

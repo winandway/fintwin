@@ -345,11 +345,11 @@ export async function gerenteResponder(ctx: Ctx): Promise<Response> {
   const db = ctx.env.DB;
   const c = await db
     .prepare(
-      `SELECT c.id, c.usuario_id, u.email, u.nombre, u.idioma FROM casos c
+      `SELECT c.id, c.usuario_id, u.email, u.nombre, u.idioma, u.sin_correo FROM casos c
        JOIN usuarios u ON u.id = c.usuario_id WHERE c.id = ? AND u.borrado_en IS NULL`,
     )
     .bind(ctx.params.id ?? '')
-    .first<{ id: string; usuario_id: string; email: string; nombre: string; idioma: 'en' | 'es' }>();
+    .first<{ id: string; usuario_id: string; email: string; nombre: string; idioma: 'en' | 'es'; sin_correo: number }>();
   if (!c) throw new HttpError(404, 'caso_no_encontrado');
   await db.batch([
     db
@@ -373,6 +373,8 @@ export async function gerenteResponder(ctx: Ctx): Promise<Response> {
     },
     ctx.now,
   );
+  // Quien entró con código no tiene correo: le llega el aviso al celular y lo ve en la app.
+  if (c.sin_correo === 1) return json({ ok: true, numero, plantilla: r.data.plantilla ?? null, aviso, correo: 'sin_correo' });
   // El correo, siempre. Si falla se dice en la respuesta y queda en el registro de errores.
   const correo = correoRespuestaCaso(ctx.env, c.email, c.nombre, { id: c.id, numero }, r.data.texto, c.idioma);
   const enviado = await enviarCorreo(ctx.env, correo);

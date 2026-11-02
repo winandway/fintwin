@@ -17,6 +17,7 @@ export interface Usuario {
   nombre: string;
   idioma: 'en' | 'es';
   confirmado_en: number | null;
+  sin_correo: number;
 }
 
 function cookieSesion(token: string, maxAgeSeg: number): string {
@@ -27,7 +28,7 @@ export async function usuarioActual(ctx: Ctx): Promise<Usuario | null> {
   const token = getCookie(ctx.req, COOKIE);
   if (!token || !/^[0-9a-f]{64}$/.test(token)) return null;
   const fila = await ctx.env.DB.prepare(
-    `SELECT u.id, u.email, u.nombre, u.idioma, u.confirmado_en FROM sesiones s
+    `SELECT u.id, u.email, u.nombre, u.idioma, u.confirmado_en, u.sin_correo FROM sesiones s
      JOIN usuarios u ON u.id = s.usuario_id
      WHERE s.token_hash = ? AND s.expira_en > ? AND u.borrado_en IS NULL`,
   )
@@ -42,12 +43,48 @@ export async function exigirUsuario(ctx: Ctx): Promise<Usuario> {
   return u;
 }
 
-async function abrirSesion(env: Env, usuarioId: string, now: number): Promise<string> {
+/** Quien entra con código no tiene contraseña para volver: su sesión dura un año. */
+export async function abrirSesion(env: Env, usuarioId: string, now: number, dias = SESION_DIAS): Promise<string> {
   const token = randomToken();
   await env.DB.prepare('INSERT INTO sesiones (token_hash, usuario_id, expira_en, creado_en) VALUES (?, ?, ?, ?)')
-    .bind(await sha256Hex(token), usuarioId, now + SESION_DIAS * DIA, now)
+    .bind(await sha256Hex(token), usuarioId, now + dias * DIA, now)
     .run();
-  return cookieSesion(token, SESION_DIAS * 24 * 3600);
+  return cookieSesion(token, dias * 24 * 3600);
+}
+
+/**
+ * Persona sin correo ni contraseña: la que entra con el código que le dio el dueño o la que
+ * paga con el link escribiendo solo su nombre. Queda confirmada; su correo es un marcador interno.
+ */
+export async function crearUsuarioSinCorreo(env: Env, nombre: string, idioma: 'en' | 'es', now: number): Promise<string> {
+  const id = newId();
+  await env.DB.prepare(
+    `INSERT INTO usuarios (id, email, nombre, clave_hash, idioma, confirmado_en, creado_en, sin_correo)
+     VALUES (?, ?, ?, '', ?, ?, ?, 1)`,
+  )
+    .bind(id, `sin-correo-${id}@fintwin.invalid`, nombre, idioma, now, now)
+    .run();
+  return id;
+}
+
+/** Seis números al azar para confirmar el correo escribiéndolos en la app. */
+function codigoSeisNumeros(): string {
+  return String(crypto.getRandomValues(new Uint32Array(1))[0]! % 1_000_000).padStart(6, '0');
+}
+
+const hashCodigo = (usuarioId: string, codigo: string) => sha256Hex(`codigo:${usuarioId}:${codigo}`);
+
+/**
+ * Confirmar el correo: un enlace y un código de seis números, los dos de un solo uso y con la
+ * misma vigencia. El código se escribe dentro de la app, sin salir al navegador.
+ */
+async function crearConfirmacion(env: Env, usuarioId: string, now: number): Promise<{ token: string; codigo: string }> {
+  const token = await crearToken(env, usuarioId, 'confirmar', 2 * DIA, now);
+  const codigo = codigoSeisNumeros();
+  await env.DB.prepare('INSERT INTO tokens (token_hash, usuario_id, tipo, expira_en, creado_en) VALUES (?, ?, ?, ?, ?)')
+    .bind(await hashCodigo(usuarioId, codigo), usuarioId, 'confirmar', now + 2 * DIA, now)
+    .run();
+  return { token, codigo };
 }
 
 async function crearToken(env: Env, usuarioId: string, tipo: 'confirmar' | 'restablecer', vigenciaMs: number, now: number) {
@@ -161,19 +198,65 @@ export async function registro(ctx: Ctx): Promise<Response> {
       .bind(id, datos.email, datos.nombre, claveHash, datos.idioma, ctx.now)
       .run();
   }
-  const token = await crearToken(ctx.env, id, 'confirmar', 2 * DIA, ctx.now);
-  const enviado = await mandar(ctx, correoConfirmar(ctx.env, datos.email, datos.nombre, token, datos.idioma));
+  const { token, codigo } = await crearConfirmacion(ctx.env, id, ctx.now);
+  const enviado = await mandar(ctx, correoConfirmar(ctx.env, datos.email, datos.nombre, token, codigo, datos.idioma));
   return json({ ok: true, correo_enviado: enviado }, 201);
+}
+
+async function marcarConfirmado(ctx: Ctx, usuarioId: string): Promise<Response> {
+  await ctx.env.DB.batch([
+    ctx.env.DB.prepare('UPDATE usuarios SET confirmado_en = COALESCE(confirmado_en, ?) WHERE id = ?').bind(ctx.now, usuarioId),
+    ctx.env.DB.prepare("UPDATE tokens SET usado_en = ? WHERE usuario_id = ? AND tipo = 'confirmar' AND usado_en IS NULL").bind(
+      ctx.now,
+      usuarioId,
+    ),
+  ]);
+  const cookie = await abrirSesion(ctx.env, usuarioId, ctx.now);
+  return json({ ok: true }, 200, { 'set-cookie': cookie });
 }
 
 export async function confirmar(ctx: Ctx): Promise<Response> {
   const { token } = parse(z.object({ token: z.string() }), await readJson(ctx.req));
-  const usuarioId = await usarToken(ctx.env, token, 'confirmar', ctx.now);
-  await ctx.env.DB.prepare('UPDATE usuarios SET confirmado_en = COALESCE(confirmado_en, ?) WHERE id = ?')
-    .bind(ctx.now, usuarioId)
-    .run();
-  const cookie = await abrirSesion(ctx.env, usuarioId, ctx.now);
-  return json({ ok: true }, 200, { 'set-cookie': cookie });
+  try {
+    return await marcarConfirmado(ctx, await usarToken(ctx.env, token, 'confirmar', ctx.now));
+  } catch (e) {
+    // Abrir otra vez el enlace de un correo que ya quedó confirmado no es un error para la persona.
+    if (e instanceof HttpError && /^[0-9a-f]{64}$/.test(token)) {
+      const ya = await ctx.env.DB.prepare(
+        `SELECT 1 FROM tokens t JOIN usuarios u ON u.id = t.usuario_id
+         WHERE t.token_hash = ? AND u.confirmado_en IS NOT NULL AND u.borrado_en IS NULL`,
+      )
+        .bind(await sha256Hex(token))
+        .first();
+      if (ya) throw new HttpError(409, 'ya_confirmado');
+    }
+    throw e;
+  }
+}
+
+/** Confirmar escribiendo en la app el código de seis números del correo. 5 fallos bloquean 15 minutos. */
+export async function confirmarCodigo(ctx: Ctx): Promise<Response> {
+  const datos = parse(z.object({ email: emailSchema, codigo: z.string().trim() }), await readJson(ctx.req));
+  const clave = `codigo:${datos.email}`;
+  await exigirNoBloqueado(ctx.env, clave, ctx.now);
+  const u = await ctx.env.DB.prepare('SELECT id, confirmado_en FROM usuarios WHERE email = ? AND borrado_en IS NULL')
+    .bind(datos.email)
+    .first<{ id: string; confirmado_en: number | null }>();
+  if (u?.confirmado_en) throw new HttpError(409, 'ya_confirmado');
+  const valido = u && /^\d{6}$/.test(datos.codigo)
+    ? await ctx.env.DB.prepare(
+        `UPDATE tokens SET usado_en = ? WHERE token_hash = ? AND usuario_id = ? AND tipo = 'confirmar'
+         AND usado_en IS NULL AND expira_en > ? RETURNING usuario_id`,
+      )
+        .bind(ctx.now, await hashCodigo(u.id, datos.codigo), u.id, ctx.now)
+        .first()
+    : null;
+  if (!u || !valido) {
+    const quedan = await sumarIntento(ctx.env, clave, ctx.now, 5, 15, 15);
+    throw new HttpError(400, 'codigo_incorrecto', { quedan });
+  }
+  await limpiarIntentos(ctx.env, clave);
+  return marcarConfirmado(ctx, u.id);
 }
 
 export async function reenviarConfirmacion(ctx: Ctx): Promise<Response> {
@@ -185,8 +268,8 @@ export async function reenviarConfirmacion(ctx: Ctx): Promise<Response> {
     .bind(email)
     .first<{ id: string; nombre: string; idioma: 'en' | 'es' }>();
   if (u) {
-    const token = await crearToken(ctx.env, u.id, 'confirmar', 2 * DIA, ctx.now);
-    await mandar(ctx, correoConfirmar(ctx.env, email, u.nombre, token, u.idioma));
+    const { token, codigo } = await crearConfirmacion(ctx.env, u.id, ctx.now);
+    await mandar(ctx, correoConfirmar(ctx.env, email, u.nombre, token, codigo, u.idioma));
   }
   // Misma respuesta exista o no: no se revela qué correos están registrados.
   return json({ ok: true });
@@ -260,7 +343,8 @@ export async function restablecer(ctx: Ctx): Promise<Response> {
 export async function yo(ctx: Ctx): Promise<Response> {
   const u = await usuarioActual(ctx);
   if (!u) return json({ usuario: null });
-  return json({ usuario: { id: u.id, email: u.email, nombre: u.nombre, idioma: u.idioma } });
+  const sinCorreo = u.sin_correo === 1;
+  return json({ usuario: { id: u.id, email: sinCorreo ? null : u.email, nombre: u.nombre, idioma: u.idioma, sin_correo: sinCorreo } });
 }
 
 export async function cambiarIdioma(ctx: Ctx): Promise<Response> {
@@ -278,15 +362,18 @@ export async function cambiarIdioma(ctx: Ctx): Promise<Response> {
  */
 export async function borrarUsuario(ctx: Ctx): Promise<Response> {
   const u = await exigirUsuario(ctx);
-  const { clave } = parse(z.object({ clave: z.string().min(1) }), await readJson(ctx.req));
-  const fila = await ctx.env.DB.prepare('SELECT clave_hash FROM usuarios WHERE id = ?')
-    .bind(u.id)
-    .first<{ clave_hash: string }>();
-  const claveIntentos = `borrar:${u.id}`;
-  await exigirNoBloqueado(ctx.env, claveIntentos, ctx.now);
-  if (!fila || !(await verifySecret(clave, fila.clave_hash))) {
-    await sumarIntento(ctx.env, claveIntentos, ctx.now, 5, 15, 15);
-    throw new HttpError(401, 'credenciales');
+  // Quien entró con código no tiene contraseña: le basta su sesión abierta.
+  if (u.sin_correo !== 1) {
+    const { clave } = parse(z.object({ clave: z.string().min(1) }), await readJson(ctx.req));
+    const fila = await ctx.env.DB.prepare('SELECT clave_hash FROM usuarios WHERE id = ?')
+      .bind(u.id)
+      .first<{ clave_hash: string }>();
+    const claveIntentos = `borrar:${u.id}`;
+    await exigirNoBloqueado(ctx.env, claveIntentos, ctx.now);
+    if (!fila || !(await verifySecret(clave, fila.clave_hash))) {
+      await sumarIntento(ctx.env, claveIntentos, ctx.now, 5, 15, 15);
+      throw new HttpError(401, 'credenciales');
+    }
   }
   const db = ctx.env.DB;
   const casos = await borrarCasosDe(ctx.env, u.id);
@@ -299,8 +386,10 @@ export async function borrarUsuario(ctx: Ctx): Promise<Response> {
     db.prepare('DELETE FROM sesiones WHERE usuario_id = ?').bind(u.id),
     db.prepare('DELETE FROM tokens WHERE usuario_id = ?').bind(u.id),
     db.prepare('DELETE FROM dispositivos WHERE usuario_id = ?').bind(u.id),
+    db.prepare('UPDATE accesos SET anulado_en = ?, codigo_hash = NULL WHERE usuario_id = ? AND anulado_en IS NULL').bind(ctx.now, u.id),
+    db.prepare('UPDATE accesos SET anulado_en = ?, codigo_hash = NULL WHERE cuenta_id IN (SELECT id FROM cuentas WHERE dueno_id = ?) AND anulado_en IS NULL').bind(ctx.now, u.id),
     db.prepare(
-      `UPDATE usuarios SET email = ?, nombre = 'Deleted user', clave_hash = '', confirmado_en = NULL, borrado_en = ?
+      `UPDATE usuarios SET email = ?, nombre = 'Deleted user', clave_hash = '', confirmado_en = NULL, borrado_en = ?, sin_correo = 0
        WHERE id = ?`,
     ).bind(`deleted-${u.id}@fintwin.invalid`, ctx.now, u.id),
   ]);

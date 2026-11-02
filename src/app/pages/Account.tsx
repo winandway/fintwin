@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, ImageIcon, KeyRound, LogOut, MinusCircle, QrCode, ReceiptText, Settings, Users, X } from 'lucide-react';
+import { ArrowLeft, Check, ImageIcon, KeyRound, LogOut, MinusCircle, QrCode, ReceiptText, Settings, UserPlus, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { formatoDinero } from '../../shared/reglas';
@@ -125,6 +125,21 @@ export function Account() {
         {t('account.thisMonth')}: <span className="font-mono text-white">{dinero(detalle.mes.total_cent)}</span> · {t('account.income')}{' '}
         <span className="font-mono">{dinero(detalle.mes.ingresos_cent)}</span>
       </p>
+
+      {esDueno && (
+        <div className="mb-4 grid grid-cols-2 gap-2">
+          <Link to={`/accounts/${id}/team`}>
+            <Boton variante="secundario" className="w-full !px-3 text-sm">
+              <UserPlus className="h-4 w-4" aria-hidden /> {t('account.addPeople')}
+            </Boton>
+          </Link>
+          <Link to={`/accounts/${id}/link`}>
+            <Boton variante="secundario" className="w-full !px-3 text-sm">
+              <QrCode className="h-4 w-4" aria-hidden /> {t('account.payLink')}
+            </Boton>
+          </Link>
+        </div>
+      )}
 
       {aviso && (
         <div className="mb-3">

@@ -12,7 +12,7 @@ describe('usuarios', () => {
     expect(r.status).toBe(201);
     expect(w.correos).toHaveLength(1);
     expect(w.correos[0]!.to).toBe('ana@example.com');
-    expect(w.correos[0]!.subject).toContain('Confirma');
+    expect(w.correos[0]!.subject).toMatch(/^Tu código de FinTwin: \d{6}$/);
 
     const antes = await w.call('POST', '/datos/auth/entrar', { body: { email: 'ana@example.com', clave: 'clave-segura-1' } });
     expect(antes.status).toBe(403);
@@ -23,7 +23,9 @@ describe('usuarios', () => {
     expect(conf.cookie).toMatch(/^ft_sesion=[0-9a-f]{64}$/);
 
     const otraVez = await w.call('POST', '/datos/auth/confirmar', { body: { token: w.tokenDe(w.correos[0]) } });
-    expect(otraVez.data.error).toBe('enlace_vencido');
+    // Abrir el enlace otra vez ya no asusta: dice que el correo ya está confirmado.
+    expect(otraVez.status).toBe(409);
+    expect(otraVez.data.error).toBe('ya_confirmado');
 
     const yo = await w.call('GET', '/datos/yo', { cookie: conf.cookie });
     expect(yo.data.usuario.nombre).toBe('Ana');

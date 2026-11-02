@@ -16,6 +16,83 @@ function useSiguiente(): string {
   return sig.startsWith('/') && !sig.startsWith('//') ? sig : '/home';
 }
 
+/** A dónde ir después de confirmar: lo que se pidió antes de registrarse, o el inicio. */
+function siguienteGuardado(): string {
+  let sig = '/home';
+  try {
+    sig = sessionStorage.getItem('fintwin:next') ?? '/home';
+    sessionStorage.removeItem('fintwin:next');
+  } catch {
+    /* nada */
+  }
+  return sig.startsWith('/') && !sig.startsWith('//') ? sig : '/home';
+}
+
+/**
+ * Confirmar el correo escribiendo el código de seis números, sin salir de la app.
+ * El código no se guarda en el borrador (es de un solo uso).
+ */
+function ConfirmarConCodigo({ email }: { email: string }) {
+  const { t } = useI18n();
+  const msg = useMensajeError();
+  const { recargar } = useSesion();
+  const navigate = useNavigate();
+  const [codigo, setCodigo] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState('');
+  const [reenviado, setReenviado] = useState(false);
+
+  async function confirmar(e: FormEvent) {
+    e.preventDefault();
+    setEnviando(true);
+    setError('');
+    try {
+      await api.post('/auth/confirmar-codigo', { email, codigo });
+      await recargar();
+      navigate(siguienteGuardado(), { replace: true });
+    } catch (err) {
+      setError(msg(err));
+      setCodigo('');
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <form onSubmit={confirmar} className="space-y-4 text-left">
+      <Campo
+        etiqueta={t('code.label')}
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        autoFocus
+        required
+        placeholder="000000"
+        maxLength={6}
+        className="text-center font-mono text-2xl tracking-[0.5em]"
+        value={codigo}
+        onChange={(e) => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+      />
+      {error && <Aviso tipo="error">{error}</Aviso>}
+      <Boton type="submit" cargando={enviando} disabled={codigo.length !== 6} className="w-full">
+        {t('code.confirm')}
+      </Boton>
+      <p className="text-center text-sm text-tenue">{t('signup.notArrived')}</p>
+      {reenviado ? (
+        <Aviso tipo="exito">{t('signup.resent')}</Aviso>
+      ) : (
+        <Boton
+          type="button"
+          variante="fantasma"
+          className="w-full"
+          onClick={() => void api.post('/auth/reenviar', { email }).then(() => setReenviado(true)).catch((e) => setError(msg(e)))}
+        >
+          {t('signup.resend')}
+        </Boton>
+      )}
+    </form>
+  );
+}
+
 export function SignUp() {
   const { t, idioma } = useI18n();
   const msg = useMensajeError();
@@ -25,7 +102,6 @@ export function SignUp() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [listo, setListo] = useState<string | null>(null);
-  const [reenviado, setReenviado] = useState(false);
   const onToken = useCallback((tk: string) => setTurnstile(tk), []);
 
   async function enviar(e: FormEvent) {
@@ -55,19 +131,7 @@ export function SignUp() {
           <MailCheck className="mx-auto h-12 w-12 text-exito" aria-hidden />
           <h1 className="text-xl font-bold">{t('signup.done')}</h1>
           <p className="text-tenue">{t('signup.doneText', { email: listo })}</p>
-          <p className="text-sm text-tenue">{t('signup.notArrived')}</p>
-          {reenviado ? (
-            <Aviso tipo="exito">{t('signup.resent')}</Aviso>
-          ) : (
-            <Boton
-              variante="secundario"
-              className="w-full"
-              onClick={() => void api.post('/auth/reenviar', { email: listo }).then(() => setReenviado(true)).catch((e) => setError(msg(e)))}
-            >
-              {t('signup.resend')}
-            </Boton>
-          )}
-          {error && <Aviso tipo="error">{error}</Aviso>}
+          <ConfirmarConCodigo email={listo} />
         </Tarjeta>
       </Pagina>
     );
@@ -110,7 +174,6 @@ export function Login() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [sinConfirmar, setSinConfirmar] = useState(false);
-  const [reenviado, setReenviado] = useState(false);
   const onToken = useCallback((tk: string) => setTurnstile(tk), []);
 
   async function enviar(e: FormEvent) {
@@ -124,7 +187,11 @@ export function Login() {
       await recargar();
       navigate(siguiente, { replace: true });
     } catch (err) {
-      if ((err as { code?: string }).code === 'correo_sin_confirmar') setSinConfirmar(true);
+      if ((err as { code?: string }).code === 'correo_sin_confirmar') {
+        setSinConfirmar(true);
+        // Se le manda un código nuevo para que confirme aquí mismo.
+        void api.post('/auth/reenviar', { email: b.valores.email }).catch(() => undefined);
+      }
       else setError(msg(err));
     } finally {
       setEnviando(false);
@@ -141,22 +208,7 @@ export function Login() {
           <CampoClave etiqueta={t('field.password')} required autoComplete="current-password" value={b.valores.clave} onChange={(e) => b.set('clave', e.target.value)} />
           <Turnstile onToken={onToken} />
           {error && <Aviso tipo="error">{error}</Aviso>}
-          {sinConfirmar && (
-            <Aviso tipo="info">
-              <p>{t('login.unconfirmed')}</p>
-              {reenviado ? (
-                <p className="mt-1 text-green-300">{t('signup.resent')}</p>
-              ) : (
-                <button
-                  type="button"
-                  className="mt-1 font-semibold text-marca"
-                  onClick={() => void api.post('/auth/reenviar', { email: b.valores.email }).then(() => setReenviado(true))}
-                >
-                  {t('signup.resend')}
-                </button>
-              )}
-            </Aviso>
-          )}
+          {sinConfirmar && <Aviso tipo="info">{t('login.unconfirmed')}</Aviso>}
           <Boton type="submit" cargando={enviando} className="w-full">
             {t('nav.signIn')}
           </Boton>
@@ -169,6 +221,12 @@ export function Login() {
             </Link>
           </div>
         </form>
+        {sinConfirmar && (
+          <div className="mt-6 border-t border-borde pt-6">
+            <p className="mb-3 text-sm text-tenue">{t('signup.doneText', { email: b.valores.email })}</p>
+            <ConfirmarConCodigo email={b.valores.email} />
+          </div>
+        )}
       </Tarjeta>
     </Pagina>
   );
@@ -269,44 +327,41 @@ export function Reset() {
 export function Confirm() {
   const { t } = useI18n();
   const [params] = useSearchParams();
-  const { recargar } = useSesion();
+  const { usuario, cargando, recargar } = useSesion();
   const navigate = useNavigate();
-  const [mal, setMal] = useState(false);
+  const [estado, setEstado] = useState<'trabajando' | 'ya' | 'mal'>('trabajando');
   const hecho = useRef(false);
 
   useEffect(() => {
-    if (hecho.current) return;
+    if (hecho.current || cargando) return;
     hecho.current = true;
     api
       .post('/auth/confirmar', { token: params.get('token') ?? '' })
       .then(async () => {
         await recargar();
-        let sig = '/home';
-        try {
-          sig = sessionStorage.getItem('fintwin:next') ?? '/home';
-          sessionStorage.removeItem('fintwin:next');
-        } catch {
-          /* nada */
-        }
-        navigate(sig.startsWith('/') && !sig.startsWith('//') ? sig : '/home', { replace: true });
+        navigate(siguienteGuardado(), { replace: true });
       })
-      .catch(() => setMal(true));
-  }, [params, recargar, navigate]);
+      .catch((err: { code?: string }) => {
+        // Abrir otra vez el enlace con la sesión abierta: directo al inicio, sin errores.
+        if (usuario) navigate('/home', { replace: true });
+        else setEstado(err.code === 'ya_confirmado' ? 'ya' : 'mal');
+      });
+  }, [params, recargar, navigate, usuario, cargando]);
 
   return (
     <Pagina angosta>
       <Tarjeta className="space-y-4 text-center">
-        {mal ? (
-          <>
-            <Aviso tipo="error">{t('confirm.bad')}</Aviso>
-            <Link to="/login" className="font-semibold text-marca">
-              {t('nav.signIn')}
-            </Link>
-          </>
-        ) : (
+        {estado === 'trabajando' ? (
           <>
             <p className="font-semibold">{t('confirm.working')}</p>
             <Cargando />
+          </>
+        ) : (
+          <>
+            <Aviso tipo={estado === 'ya' ? 'exito' : 'error'}>{estado === 'ya' ? t('confirm.already') : t('confirm.bad')}</Aviso>
+            <Link to="/login" className="block">
+              <Boton className="w-full">{t('nav.signIn')}</Boton>
+            </Link>
           </>
         )}
       </Tarjeta>

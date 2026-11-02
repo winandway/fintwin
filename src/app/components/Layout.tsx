@@ -30,7 +30,7 @@ function MenuCuenta() {
       </button>
       {abierto && (
         <div className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-borde bg-panel p-1.5 shadow-xl">
-          <p className="truncate px-3 py-2 text-xs text-tenue">{usuario.email}</p>
+          {usuario.email && <p className="truncate px-3 py-2 text-xs text-tenue">{usuario.email}</p>}
           <Link
             to="/help"
             onClick={() => setAbierto(false)}

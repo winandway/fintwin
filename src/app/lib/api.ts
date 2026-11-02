@@ -35,7 +35,9 @@ export const api = {
 
 export interface Usuario {
   id: string;
-  email: string;
+  /** null para quien entró con un código o solo con su nombre. */
+  email: string | null;
+  sin_correo?: boolean;
   nombre: string;
   idioma: 'en' | 'es';
 }

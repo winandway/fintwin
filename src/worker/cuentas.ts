@@ -6,6 +6,7 @@ import type { Env } from './env';
 import { HttpError, json, readJson, type Ctx } from './http';
 import { exigirNoBloqueado, limpiarIntentos, sumarIntento } from './limites';
 import { categoriaValida, fechaValida, leerImagen, textoCorto } from './archivos';
+import { listarAccesos } from './accesos';
 
 export type Rol = 'dueno' | 'validador';
 
@@ -92,6 +93,8 @@ function mesActual(now: number): string {
 
 export async function crearCuenta(ctx: Ctx): Promise<Response> {
   const u = await exigirUsuario(ctx);
+  // El negocio lo abre quien administra el dinero, con su correo confirmado.
+  if (u.sin_correo === 1) throw new HttpError(403, 'requiere_correo');
   const datos = parse(
     z.object({ nombre: z.string().trim().min(2).max(80), pin: pinSchema, comision_pct: z.number().min(0).max(50).default(0) }),
     await readJson(ctx.req),
@@ -165,7 +168,7 @@ export async function listarComprobantes(ctx: Ctx): Promise<Response> {
   const { results } = await ctx.env.DB.prepare(
     `SELECT k.id, k.tipo, k.estado, k.monto_cent, k.comision_cent, k.fecha_pago, k.confirmacion, k.pagador,
        k.beneficiario, k.motivo, k.comercio, k.categoria, k.lectura, k.archivo_clave IS NOT NULL AS tiene_archivo, k.creado_en, k.revisado_en,
-       s.nombre AS subido_por_nombre, s.email AS subido_por_email, r.nombre AS revisado_por_nombre
+       s.nombre AS subido_por_nombre, CASE WHEN s.sin_correo = 1 THEN NULL ELSE s.email END AS subido_por_email, r.nombre AS revisado_por_nombre
      FROM comprobantes k
      LEFT JOIN usuarios s ON s.id = k.subido_por
      LEFT JOIN usuarios r ON r.id = k.revisado_por
@@ -302,8 +305,12 @@ export async function verEquipo(ctx: Ctx): Promise<Response> {
   const u = await exigirUsuario(ctx);
   const m = await membresia(ctx.env, ctx.params.id ?? '', u.id);
   const miembros = await ctx.env.DB.prepare(
-    `SELECT m.usuario_id, m.rol, m.creado_en, u.nombre, u.email FROM miembros m JOIN usuarios u ON u.id = m.usuario_id
-     WHERE m.cuenta_id = ? ORDER BY m.rol = 'dueno' DESC, m.creado_en`,
+    // Quien entró con código aparece en «accesos», no aquí; su correo es un marcador interno.
+    `SELECT m.usuario_id, m.rol, m.creado_en, u.nombre, CASE WHEN u.sin_correo = 1 THEN NULL ELSE u.email END AS email
+     FROM miembros m JOIN usuarios u ON u.id = m.usuario_id
+     WHERE m.cuenta_id = ? AND NOT EXISTS (
+       SELECT 1 FROM accesos a WHERE a.cuenta_id = m.cuenta_id AND a.usuario_id = m.usuario_id AND a.anulado_en IS NULL)
+     ORDER BY m.rol = 'dueno' DESC, m.creado_en`,
   )
     .bind(m.cuenta_id)
     .all();
@@ -318,7 +325,8 @@ export async function verEquipo(ctx: Ctx): Promise<Response> {
             .all()
         ).results
       : [];
-  return json({ rol: m.rol, yo: u.id, miembros: miembros.results, invitaciones });
+  const accesos = m.rol === 'dueno' ? await listarAccesos(ctx.env, m.cuenta_id, ctx.now) : [];
+  return json({ rol: m.rol, yo: u.id, miembros: miembros.results, invitaciones, accesos });
 }
 
 export async function crearInvitacion(ctx: Ctx): Promise<Response> {
