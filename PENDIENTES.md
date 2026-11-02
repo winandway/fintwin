@@ -17,9 +17,9 @@
 
 ## Producto
 
-- [ ] 👤 **Llave de Gemini** (variable `GEMINI_API_KEY` en el panel de YaDominios Cloud). Sin ella la
-  lectura con IA está apagada y quien paga escribe el monto y el número a mano. No hay ninguna llave de
-  Gemini válida guardada en la máquina.
+- [x] **Llave de Gemini** (1 nov 2026): cargada como `GEMINI_API_KEY` en el sitio. Es la llave prepago del
+  proyecto overbank (torplanet1@gmail.com); datos de recarga en `~/.config/fintwin/proveedores-ia.md`.
+  Comprobada con una captura real de Wells Fargo: monto y confirmación leídos bien. La salud dice `lectura_ia: ok`.
 - [ ] 👤 **Richard crea su propia cuenta en FinTwin** para comprobar que llegan los correos.
 - [x] Entrada simple (1 nov 2026): el correo se confirma con un código de 6 números dentro de la app; el dueño
   agrega a quien sube o revisa con un código de acceso (sin correo); el link de pago pide solo el nombre. Guía en
