@@ -54,14 +54,17 @@ describe('link de pago', () => {
       form: w.captura({ monto: '10', confirmacion: 'zx-9988' }, otraImagen),
     });
     expect(r.status).toBe(409);
-    expect(r.data.error).toBe('confirmacion_repetida');
+    expect(r.data.error).toBe('comprobante_repetido');
   });
 
   it('la misma imagen no entra dos veces', async () => {
     const { w, cliente, slug } = await escenario();
     await w.call('POST', `/datos/pagar/${slug}/subir`, { cookie: cliente, form: w.captura({ monto: '10', confirmacion: 'A1111' }) });
     const r = await w.call('POST', `/datos/pagar/${slug}/subir`, { cookie: cliente, form: w.captura({ monto: '10', confirmacion: 'B2222' }) });
-    expect(r.data.error).toBe('captura_repetida');
+    expect(r.data.error).toBe('comprobante_repetido');
+    // Y se avisa apenas se elige la foto, antes de enviar.
+    const leida = await w.call('POST', `/datos/pagar/${slug}/leer`, { cookie: cliente, form: w.captura() });
+    expect(leida.data.repetida).toBe(true);
   });
 
   it('rechaza lo que no es imagen aunque diga que lo es', async () => {
@@ -79,23 +82,23 @@ describe('link de pago', () => {
     expect(r.status).toBe(401);
   });
 
-  it('con IA: lee la captura en el servidor y rechaza si no ve el número completo', async () => {
+  it('con IA: lee la captura y sin número de confirmación completo no entra', async () => {
     const { w, cliente, slug } = await escenario({ GEMINI_API_KEY: 'clave-prueba' });
-    w.setGemini({ is_receipt: true, amount: 75.5, date: '2026-10-28', confirmation: null, payer: 'X', payee: 'Y' });
+    w.setGemini({ amount: 75.5, transaction_date: '2026-10-28', confirmation_code: null, sender_name: 'X', confidence: 0.9 });
     const sin = await w.call('POST', `/datos/pagar/${slug}/subir`, { cookie: cliente, form: w.captura({ confirmacion: 'INVENTADO1' }) });
     expect(sin.data.error).toBe('sin_confirmacion');
 
-    w.setGemini({ is_receipt: true, amount: '75.50', date: '2026-10-28', confirmation: 'Q77 8899', payer: 'Ana', payee: 'Centro' });
-    const ok = await w.call('POST', `/datos/pagar/${slug}/subir`, { cookie: cliente, form: w.captura() });
+    w.setGemini({ amount: '75.50', transaction_date: '2026-10-28T10:00:00Z', confirmation_code: 'Q77 8899', sender_name: 'Ana', recipient_name: 'Centro', platform: 'Zelle', confidence: 0.95 });
+    const otra = new Uint8Array([...PNG, 7]);
+    // Quien paga elige la foto: la IA la lee antes de enviar.
+    const leida = await w.call('POST', `/datos/pagar/${slug}/leer`, { cookie: cliente, form: w.captura({}, otra) });
+    expect(leida.data.lectura).toMatchObject({ monto_cent: 7550, confirmacion: 'Q77 8899', plataforma: 'zelle', estado: 'success' });
+    // Al enviar no se paga otra lectura: se reutiliza la de la misma imagen.
+    const antes = w.llamadasIA();
+    const ok = await w.call('POST', `/datos/pagar/${slug}/subir`, { cookie: cliente, form: w.captura({ monto: '80' }, otra) });
     expect(ok.status).toBe(201);
-    expect(ok.data.lectura).toMatchObject({ monto_cent: 7550, confirmacion: 'Q77 8899', modo: 'ia' });
-
-    w.setGemini({ is_receipt: false });
-    const foto = await w.call('POST', `/datos/pagar/${slug}/subir`, {
-      cookie: cliente,
-      form: w.captura({}, new Uint8Array([...PNG, 5])),
-    });
-    expect(foto.data.error).toBe('no_es_comprobante');
+    expect(w.llamadasIA()).toBe(antes);
+    expect(ok.data.lectura).toMatchObject({ monto_cent: 8000, confirmacion: 'Q77 8899', modo: 'ia' });
   });
 
   it('la imagen solo la ven quien la subió y el equipo', async () => {

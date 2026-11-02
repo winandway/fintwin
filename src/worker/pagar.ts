@@ -1,10 +1,12 @@
-import { aCentavos, MAX_ARCHIVO, normalizarConfirmacion } from '../shared/reglas';
-import { exigirUsuario, registrarError } from './auth';
-import { newId, sha256Hex } from './crypto';
+import { aCentavos, normalizarConfirmacion } from '../shared/reglas';
+import { exigirUsuario } from './auth';
+import { leerImagen, textoCorto } from './archivos';
+import { buscarRepetida, columnasLectura, lecturaDe, SQL_COLUMNAS_LECTURA } from './capturas';
+import { newId } from './crypto';
 import { HttpError, json, type Ctx } from './http';
 import { racionar } from './limites';
 import { avisarCapturaNueva } from './avisos';
-import { iaDisponible, leerCaptura, type Lectura } from './ocr';
+import { iaDisponible, LECTURA_VACIA } from './ocr';
 
 const TIPOS: { mime: string; ext: string; firma: (b: Uint8Array) => boolean }[] = [
   { mime: 'image/jpeg', ext: 'jpg', firma: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
@@ -25,15 +27,31 @@ export function tipoReal(bytes: Uint8Array): { mime: string; ext: string } | nul
 async function cuentaPorSlug(ctx: Ctx) {
   const slug = ctx.params.slug ?? '';
   if (!/^[a-z0-9]{12}$/.test(slug)) return null;
-  return ctx.env.DB.prepare('SELECT id, nombre FROM cuentas WHERE link_slug = ? AND archivada_en IS NULL')
+  return ctx.env.DB.prepare('SELECT id, nombre, exigir_confirmacion FROM cuentas WHERE link_slug = ? AND archivada_en IS NULL')
     .bind(slug)
-    .first<{ id: string; nombre: string }>();
+    .first<{ id: string; nombre: string; exigir_confirmacion: number }>();
 }
 
 export async function verLinkDePago(ctx: Ctx): Promise<Response> {
   const c = await cuentaPorSlug(ctx);
   if (!c) return json({ valido: false });
-  return json({ valido: true, nombre: c.nombre, lectura_ia: iaDisponible(ctx.env) });
+  return json({ valido: true, nombre: c.nombre, lectura_ia: iaDisponible(ctx.env), exigir_confirmacion: c.exigir_confirmacion === 1 });
+}
+
+/**
+ * Quien paga elige la foto y la IA la lee en ese momento, antes de enviar: así ve el número de
+ * confirmación y el monto, y si falta el número se le dice ahí mismo. No guarda nada.
+ */
+export async function leerEnLink(ctx: Ctx): Promise<Response> {
+  const u = await exigirUsuario(ctx);
+  const cuenta = await cuentaPorSlug(ctx);
+  if (!cuenta) throw new HttpError(404, 'link_invalido');
+  await racionar(ctx.env, `leer:${u.id}`, ctx.now, 40, 60);
+  const { archivo } = await leerImagen(ctx, 'archivo_invalido');
+  const lectura = await lecturaDe(ctx.env, archivo, cuenta.nombre, ctx.now);
+  // Se avisa ya, al elegir la foto, si ese comprobante ya se envió antes (en cualquier cuenta).
+  const repetida = (await buscarRepetida(ctx.env, archivo.hash, lectura?.confirmacion ?? null)) !== null;
+  return json({ lectura_ia: lectura !== null, lectura, repetida });
 }
 
 export async function subirCaptura(ctx: Ctx): Promise<Response> {
@@ -41,100 +59,41 @@ export async function subirCaptura(ctx: Ctx): Promise<Response> {
   const cuenta = await cuentaPorSlug(ctx);
   if (!cuenta) throw new HttpError(404, 'link_invalido');
   await racionar(ctx.env, `subir:${u.id}`, ctx.now, 30, 60);
+  const { form, archivo } = await leerImagen(ctx, 'archivo_invalido');
 
-  let form: FormData;
-  try {
-    form = await ctx.req.formData();
-  } catch {
-    throw new HttpError(400, 'archivo_invalido');
-  }
-  const archivo = form.get('archivo');
-  if (!archivo || typeof archivo === 'string') throw new HttpError(400, 'archivo_invalido');
-  if (archivo.size > MAX_ARCHIVO) throw new HttpError(413, 'archivo_grande');
-  const bytes = new Uint8Array(await archivo.arrayBuffer());
-  const tipo = tipoReal(bytes);
-  if (!tipo) throw new HttpError(415, 'no_es_imagen');
+  const lectura = await lecturaDe(ctx.env, archivo, cuenta.nombre, ctx.now);
+  // El monto lo escribe (o corrige) quien pagó; si no escribió nada, va el que leyó la IA.
+  const montoCent = aCentavos(String(form.get('monto') ?? '')) ?? lectura?.monto_cent ?? null;
+  // Sin IA, quien paga escribe el número y el validador lo compara con la imagen.
+  const confirmacion = lectura ? lectura.confirmacion : String(form.get('confirmacion') ?? '').trim().slice(0, 60) || null;
+  const norm = normalizarConfirmacion(confirmacion);
+  if (!montoCent) throw new HttpError(422, 'sin_monto', { lectura });
+  if (montoCent > 1_000_000_000) throw new HttpError(422, 'monto_invalido');
+  if (!norm && cuenta.exigir_confirmacion === 1) throw new HttpError(422, 'sin_confirmacion', { lectura });
 
-  const hash = await sha256Hex(bytes);
-  const mismaImagen = await ctx.env.DB.prepare(
-    "SELECT id FROM comprobantes WHERE archivo_hash = ? AND estado <> 'rechazado' LIMIT 1",
-  )
-    .bind(hash)
-    .first();
-  if (mismaImagen) throw new HttpError(409, 'captura_repetida');
+  // Repetida en cualquier cuenta (sin contar rechazadas): no entra.
+  if (await buscarRepetida(ctx.env, archivo.hash, confirmacion)) throw new HttpError(409, 'comprobante_repetido');
 
-  let lectura: Lectura;
-  let modo: 'ia' | 'manual';
-  if (iaDisponible(ctx.env)) {
-    try {
-      lectura = await leerCaptura(ctx.env, bytes, tipo.mime);
-      modo = 'ia';
-    } catch (e) {
-      await registrarError(ctx.env, ctx.url.pathname, `lectura IA: ${String(e)}`, ctx.now);
-      throw new HttpError(503, 'lectura_no_disponible');
-    }
-    if (!lectura.es_comprobante) throw new HttpError(422, 'no_es_comprobante');
-  } else {
-    // Sin IA configurada, quien paga escribe el monto y el número; el validador lo compara con la imagen.
-    lectura = {
-      es_comprobante: true,
-      monto_cent: aCentavos(String(form.get('monto') ?? '')),
-      fecha: /^\d{4}-\d{2}-\d{2}$/.test(String(form.get('fecha') ?? '')) ? String(form.get('fecha')) : null,
-      confirmacion: String(form.get('confirmacion') ?? '').trim().slice(0, 60) || null,
-      pagador: null,
-      beneficiario: null,
-    };
-    modo = 'manual';
-  }
-
-  const norm = normalizarConfirmacion(lectura.confirmacion);
-  if (!norm) throw new HttpError(422, 'sin_confirmacion', { lectura });
-  if (!lectura.monto_cent) throw new HttpError(422, 'sin_monto', { lectura });
-
-  const repetida = await ctx.env.DB.prepare(
-    "SELECT id FROM comprobantes WHERE confirmacion_norm = ? AND estado <> 'rechazado' LIMIT 1",
-  )
-    .bind(norm)
-    .first();
-  if (repetida) throw new HttpError(409, 'confirmacion_repetida', { confirmacion: lectura.confirmacion });
-
+  const fechaManual = String(form.get('fecha') ?? '');
+  const l = lectura ?? { ...LECTURA_VACIA, fecha: /^\d{4}-\d{2}-\d{2}$/.test(fechaManual) ? fechaManual : null };
   const id = newId();
-  const clave = `comprobantes/${cuenta.id}/${id}.${tipo.ext}`;
-  await ctx.env.BUCKET.put(clave, bytes, { httpMetadata: { contentType: tipo.mime } });
-  try {
-    await ctx.env.DB.batch([
-      ctx.env.DB.prepare(
-        `INSERT INTO comprobantes (id, cuenta_id, subido_por, tipo, estado, monto_cent, fecha_pago, confirmacion,
-           confirmacion_norm, pagador, beneficiario, lectura, archivo_clave, archivo_hash, archivo_tipo, creado_en)
-         VALUES (?, ?, ?, 'ingreso', 'pendiente', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).bind(
-        id,
-        cuenta.id,
-        u.id,
-        lectura.monto_cent,
-        lectura.fecha,
-        lectura.confirmacion,
-        norm,
-        lectura.pagador,
-        lectura.beneficiario,
-        modo,
-        clave,
-        hash,
-        tipo.mime,
-        ctx.now,
-      ),
-      ctx.env.DB.prepare(
-        'INSERT INTO beneficiarios (usuario_id, cuenta_id, agregado_en) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
-      ).bind(u.id, cuenta.id, ctx.now),
-    ]);
-  } catch (e) {
-    // Dos envíos simultáneos del mismo número: el índice único deja entrar solo uno.
-    await ctx.env.BUCKET.delete(clave);
-    if (String(e).includes('UNIQUE')) throw new HttpError(409, 'confirmacion_repetida');
-    throw e;
-  }
-  await avisarCapturaNueva(ctx.env, cuenta, lectura.monto_cent, u.nombre, ctx.now);
-  return json({ ok: true, id, lectura: { ...lectura, modo } }, 201);
+  const clave = `comprobantes/${cuenta.id}/${id}.${archivo.ext}`;
+  await ctx.env.BUCKET.put(clave, archivo.bytes, { httpMetadata: { contentType: archivo.mime } });
+  await ctx.env.DB.batch([
+    ctx.env.DB.prepare(
+      `INSERT INTO comprobantes (id, cuenta_id, subido_por, tipo, estado, monto_cent, confirmacion, confirmacion_norm,
+         ${SQL_COLUMNAS_LECTURA}, notas, lectura, via, archivo_clave, archivo_hash, archivo_tipo, creado_en)
+       VALUES (?, ?, ?, 'ingreso', 'pendiente', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'link', ?, ?, ?, ?)`,
+    ).bind(
+      id, cuenta.id, u.id, montoCent, confirmacion, norm, ...columnasLectura(lectura ? l : { ...l, estado: 'failed' }),
+      textoCorto(form.get('nota'), 300), lectura ? 'ia' : 'manual', clave, archivo.hash, archivo.mime, ctx.now,
+    ),
+    ctx.env.DB.prepare(
+      'INSERT INTO beneficiarios (usuario_id, cuenta_id, agregado_en) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+    ).bind(u.id, cuenta.id, ctx.now),
+  ]);
+  await avisarCapturaNueva(ctx.env, cuenta, montoCent, u.nombre, ctx.now);
+  return json({ ok: true, id, lectura: { ...l, monto_cent: montoCent, confirmacion, modo: lectura ? 'ia' : 'manual' } }, 201);
 }
 
 export async function misPagos(ctx: Ctx): Promise<Response> {
@@ -148,7 +107,7 @@ export async function misPagos(ctx: Ctx): Promise<Response> {
   const comprobantes = await ctx.env.DB.prepare(
     `SELECT k.id, k.estado, k.monto_cent, k.fecha_pago, k.confirmacion, k.creado_en, c.nombre AS cuenta_nombre
      FROM comprobantes k JOIN cuentas c ON c.id = k.cuenta_id
-     WHERE k.subido_por = ? AND k.tipo = 'ingreso' ORDER BY k.creado_en DESC LIMIT 100`,
+     WHERE k.subido_por = ? AND k.tipo = 'ingreso' AND COALESCE(k.via, 'link') = 'link' ORDER BY k.creado_en DESC LIMIT 100`,
   )
     .bind(u.id)
     .all();

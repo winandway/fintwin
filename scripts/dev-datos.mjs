@@ -2,7 +2,9 @@
 // base SQLite en memoria y correos impresos en la consola (nunca se mandan).
 import { build } from 'esbuild';
 import { createServer } from 'node:http';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 await build({
   entryPoints: ['scripts/dev-entry.ts'],
@@ -23,7 +25,17 @@ const env = {
   SITIO_TOKEN: 'local',
   ARCHIVOS_FIRMA: 'firma-local',
   GERENTE_SECRETO: 'gerente-local',
+  // La lectura con IA en local usa la llave guardada en la máquina (nunca en el repo), si existe.
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY ?? llaveLocal(),
 };
+
+function llaveLocal() {
+  try {
+    return readFileSync(join(homedir(), '.config/fintwin/gemini-api-key'), 'utf8').trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 const fetchReal = globalThis.fetch;
 globalThis.fetch = async (input, init) => {

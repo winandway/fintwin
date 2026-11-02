@@ -1,4 +1,4 @@
-import { ArrowLeft, Copy, Download, ExternalLink, KeyRound, RefreshCw, Share2, Trash2, UserMinus, UserPlus } from 'lucide-react';
+import { ArrowLeft, Copy, Download, ExternalLink, KeyRound, MessageCircle, RefreshCw, Share2, Trash2, UserMinus, UserPlus } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -102,9 +102,41 @@ export function PayLink() {
       <Tarjeta className="space-y-4">
         <p className="text-sm text-tenue">{t('link.text')}</p>
         <Copiable texto={link} />
-        <Boton className="w-full" onClick={() => void compartir(t('link.shareText', { name: detalle.cuenta.nombre }), link)}>
-          <Share2 className="h-4 w-4" aria-hidden /> {t('link.share')}
-        </Boton>
+        <div className="grid grid-cols-2 gap-2">
+          <Boton variante="secundario" onClick={() => void compartir(t('link.shareText', { name: detalle.cuenta.nombre }), link)}>
+            <Share2 className="h-4 w-4" aria-hidden /> {t('link.share')}
+          </Boton>
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(t('link.whatsText', { name: detalle.cuenta.nombre, url: link }))}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-500"
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden /> WhatsApp
+          </a>
+        </div>
+        {detalle.rol === 'dueno' && (
+          <label className="flex items-start gap-3 rounded-xl border border-borde p-3">
+            <input
+              type="checkbox"
+              role="switch"
+              className="mt-0.5 h-5 w-5 shrink-0 accent-green-500"
+              checked={detalle.cuenta.exigir_confirmacion}
+              onChange={(e) => {
+                const valor = e.target.checked;
+                setDetalle({ ...detalle, cuenta: { ...detalle.cuenta, exigir_confirmacion: valor } });
+                void api.post(`/cuentas/${id}/exigir-confirmacion`, { valor }).catch((err) => {
+                  setDetalle({ ...detalle, cuenta: { ...detalle.cuenta, exigir_confirmacion: !valor } });
+                  setError(msg(err));
+                });
+              }}
+            />
+            <span>
+              <span className="block font-semibold">{t('link.requireCode')}</span>
+              <span className="block text-xs text-tenue">{t('link.requireCodeText')}</span>
+            </span>
+          </label>
+        )}
         {detalle && (
           <Link to={`/pay/${detalle.cuenta.link_slug}`} className="block">
             <Boton variante="secundario" className="w-full">

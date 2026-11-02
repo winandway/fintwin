@@ -13,6 +13,7 @@ import { DocsGuia, DocsIndex } from './pages/Docs';
 import { PayLink, Team } from './pages/Equipo';
 import { Home, NewAccount } from './pages/Home';
 import { DeleteAccount, Invite, Landing, NotFound, Pay } from './pages/Publicas';
+import { Clients, Review } from './pages/Revisar';
 
 function ConSesion({ children }: { children: ReactNode }) {
   const { usuario, cargando } = useSesion();
@@ -49,6 +50,8 @@ export function Rutas() {
         <Route path="/accounts/:id/link" element={<ConSesion><PayLink /></ConSesion>} />
         <Route path="/accounts/:id/team" element={<ConSesion><Team /></ConSesion>} />
         <Route path="/accounts/:id/commission" element={<ConSesion><Commission /></ConSesion>} />
+        <Route path="/accounts/:id/review" element={<ConSesion><Review /></ConSesion>} />
+        <Route path="/accounts/:id/clients" element={<ConSesion><Clients /></ConSesion>} />
         <Route path="/help" element={<ConSesion><Help /></ConSesion>} />
         <Route path="/help/:id" element={<ConSesion><HelpCase /></ConSesion>} />
         <Route path="/docs" element={<DocsIndex />} />

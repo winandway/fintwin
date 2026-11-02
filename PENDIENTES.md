@@ -25,6 +25,9 @@
   agrega a quien sube o revisa con un código de acceso (sin correo); el link de pago pide solo el nombre. Guía en
   Docs «Agrega a tu equipo con un código de acceso». El guion del video de Apple quedó con este flujo.
 - [x] Casos de ayuda en la app y puerta del gerente de correo (1 nov 2026). Guía pública en Docs.
+- [x] **Igual al FinTwin original** (1 nov 2026): pantalla de la cuenta, repetidas con historial y «Aceptar igual»,
+  puntos de colores, en espera, cancelar, bandeja «Por revisar», «Clientes que te pagan», exportar, comisión por
+  día y por mes, link de pago con lectura al elegir la foto. Comparación completa en `docs/IGUAL-AL-ORIGINAL.md`.
 - [ ] Turnstile apagado (faltan las claves), guía pública en Docs.
 
 ## Cuenta del revisor (Apple y Google)

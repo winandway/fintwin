@@ -16,6 +16,7 @@ export function crearMundo(extra: Partial<Env> = {}) {
   const correos: Correo[] = [];
   const avisos: { to: string; title: string; body: string }[] = [];
   let gemini: unknown = null;
+  let llamadasIA = 0;
   const bucket = crearBucket();
   const env = {
     DB: crearD1(),
@@ -51,6 +52,7 @@ export function crearMundo(extra: Partial<Env> = {}) {
         return new Response(JSON.stringify({ data: lista.map(() => ({ status: 'ok' })) }));
       }
       if (u.includes('generativelanguage.googleapis.com')) {
+        llamadasIA++;
         return new Response(
           JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(gemini) }] } }] }),
         );
@@ -111,5 +113,6 @@ export function crearMundo(extra: Partial<Env> = {}) {
     usuario,
     captura,
     setGemini: (v: unknown) => (gemini = v),
+    llamadasIA: () => llamadasIA,
   };
 }

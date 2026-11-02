@@ -60,7 +60,7 @@ export interface Resumen {
 }
 
 export interface CuentaDetalle {
-  cuenta: { id: string; nombre: string; comision_pct: number; link_slug: string };
+  cuenta: { id: string; nombre: string; comision_pct: number; link_slug: string; exigir_confirmacion: boolean; creado_en: number };
   rol: 'dueno' | 'validador';
   resumen: Resumen;
   mes: Resumen & { mes: string };
@@ -84,8 +84,58 @@ export interface Comprobante {
   creado_en: number;
   revisado_en: number | null;
   subido_por_nombre: string | null;
-  subido_por_email: string | null;
+  subido_por_email?: string | null;
   revisado_por_nombre: string | null;
+  notas?: string | null;
+  en_espera?: number;
+  via?: 'link' | 'cuenta' | null;
+  plataforma?: string | null;
+  monto_leido_cent?: number | null;
+}
+
+/** Un movimiento de la pantalla de la cuenta, con todo lo que leyó la IA. */
+export interface Movimiento extends Comprobante {
+  pagador_correo: string | null;
+  beneficiario_correo: string | null;
+  lectura_estado: string | null;
+  /** Cuántas OTRAS veces se usó la misma captura o el mismo número, en todas las cuentas. */
+  repetidas: number;
+}
+
+export interface Movimientos {
+  periodo: string;
+  mes_actual: string;
+  meses: string[];
+  movimientos: Movimiento[];
+  cifras: { bruto_cent: number; comision_cent: number; comision_queda_cent: number; salidas_cent: number; cancelados_cent: number };
+  total_cent: number;
+  este_mes_cent: number;
+  pendientes: number;
+  ultimo: number | null;
+}
+
+/** Lo que leyó la IA de una captura de pago. */
+export interface Lectura {
+  monto_cent: number | null;
+  fecha: string | null;
+  confirmacion: string | null;
+  pagador: string | null;
+  pagador_correo: string | null;
+  beneficiario: string | null;
+  beneficiario_correo: string | null;
+  plataforma: string | null;
+  estado: 'success' | 'partial' | 'failed';
+}
+
+export interface Uso {
+  id: string;
+  cuenta: string | null;
+  otra_cuenta: boolean;
+  monto_cent: number | null;
+  confirmacion: string | null;
+  estado: string;
+  creado_en: number;
+  coincide: 'imagen' | 'codigo';
 }
 
 export type EstadoCaso = 'abierto' | 'respondido' | 'cerrado';

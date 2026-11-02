@@ -21,6 +21,67 @@ export interface Guia {
 
 export const GUIAS: Guia[] = [
   {
+    slug: 'repeated-receipts-and-status-colors',
+    seccion: 'empezar',
+    titulo: { en: 'Repeated receipts and status colors', es: 'Capturas repetidas y colores de cada movimiento' },
+    resumen: {
+      en: 'How FinTwin warns you when a receipt was already used, and what each colored dot in your movements means.',
+      es: 'Cómo te avisa FinTwin cuando una captura ya se usó, y qué significa cada punto de color en tus movimientos.',
+    },
+    cuerpo: {
+      en: [
+        { tipo: 'p', texto: 'A receipt can only be counted once. FinTwin compares every new receipt with all the ones already recorded: the same image or the same confirmation number means it is a repeat, even if it was sent from another phone or to another account.' },
+        { tipo: 'h2', texto: 'When you record a receipt' },
+        { tipo: 'pasos', items: [
+          'Open your account and, in “Record receipt”, tap to upload the screenshot.',
+          'The AI reads it right away: amount, confirmation number, who paid, who received and the platform.',
+          'If that receipt was already used, a red “Duplicate receipt” box appears with its whole usage history.',
+          'If it is already in this same account, it can’t go in twice. If it was used in another account, you can tap “Accept anyway” and confirm with your PIN.',
+        ] },
+        { tipo: 'imagen', src: '/docs/repetidas-aviso-en.png', alt: 'The red Duplicate receipt box with the usage history' },
+        { tipo: 'nota', texto: 'Before saving, FinTwin asks “Money coming IN”: a last check so nobody records an outflow by mistake.' },
+        { tipo: 'h2', texto: 'What each dot means' },
+        { tipo: 'lista', items: [
+          'Green with a check: approved, and the receipt was never used anywhere else.',
+          'Yellow with a triangle: approved, but the same receipt was used 1 or 2 more times.',
+          'Orange with a triangle: approved, and the receipt was used 3 or more times. Check it carefully.',
+          'Orange with a clock: pending, waiting for approval.',
+          'Red with a triangle: on hold. It was approved but doesn’t count in the total until you confirm it with your PIN.',
+          'Red with an X: rejected or cancelled. It never counts in the total.',
+        ] },
+        { tipo: 'p', texto: 'Tap any movement to open it: you see gross, fee and net, the big confirmation number ready to copy, the data the AI detected, the receipt image and, if it was repeated, the “Repeated receipt” box with every use.' },
+        { tipo: 'imagen', src: '/docs/repetidas-colores-en.png', alt: 'An open movement with its yellow dot and the Repeated receipt box' },
+        { tipo: 'h2', texto: 'And from the payment link?' },
+        { tipo: 'p', texto: 'Whoever pays you with your link is warned as soon as they choose the photo: “This receipt was already sent before.” It doesn’t reach you twice.' },
+      ],
+      es: [
+        { tipo: 'p', texto: 'Una captura se cuenta una sola vez. FinTwin compara cada comprobante nuevo con todos los que ya están registrados: la misma imagen o el mismo número de confirmación es una repetida, aunque llegue desde otro teléfono o a otra cuenta.' },
+        { tipo: 'h2', texto: 'Cuando registras un comprobante' },
+        { tipo: 'pasos', items: [
+          'Abre tu cuenta y, en «Registrar comprobante», toca para subir la captura.',
+          'La IA la lee enseguida: monto, número de confirmación, quién pagó, quién recibió y la plataforma.',
+          'Si esa captura ya se usó, aparece el recuadro rojo «Captura duplicada» con todo su historial de uso.',
+          'Si ya está en esta misma cuenta, no puede entrar dos veces. Si se usó en otra cuenta, puedes tocar «Aceptar igual» y confirmar con tu PIN.',
+        ] },
+        { tipo: 'imagen', src: '/docs/repetidas-aviso-es.png', alt: 'El recuadro rojo Captura duplicada con su historial de uso' },
+        { tipo: 'nota', texto: 'Antes de guardar, FinTwin pregunta «ENTRADA de dinero»: una última revisión para que nadie registre una salida por error.' },
+        { tipo: 'h2', texto: 'Qué significa cada punto' },
+        { tipo: 'lista', items: [
+          'Verde con un check: aprobado, y la captura nunca se usó en otro lado.',
+          'Amarillo con un triángulo: aprobado, pero la misma captura se usó 1 o 2 veces más.',
+          'Naranja con un triángulo: aprobado, y la captura se usó 3 o más veces. Revísalo con cuidado.',
+          'Naranja con un reloj: pendiente, esperando aprobación.',
+          'Rojo con un triángulo: en espera. Se aprobó, pero no cuenta en el total hasta que lo confirmes con tu PIN.',
+          'Rojo con una X: rechazado o cancelado. Nunca cuenta en el total.',
+        ] },
+        { tipo: 'p', texto: 'Toca cualquier movimiento para abrirlo: ves el bruto, la comisión y el neto, el número de confirmación en grande listo para copiar, los datos que detectó la IA, la imagen de la captura y, si se repitió, el recuadro «Captura repetida» con cada uso.' },
+        { tipo: 'imagen', src: '/docs/repetidas-colores-es.png', alt: 'Un movimiento abierto con su punto amarillo y el recuadro Captura repetida' },
+        { tipo: 'h2', texto: '¿Y desde el link de pago?' },
+        { tipo: 'p', texto: 'A quien te paga con tu link se le avisa apenas elige la foto: «Este comprobante ya fue enviado antes». No te llega dos veces.' },
+      ],
+    },
+  },
+  {
     slug: 'team-access-codes',
     seccion: 'empezar',
     titulo: { en: 'Add your team with an access code', es: 'Agrega a tu equipo con un código de acceso' },

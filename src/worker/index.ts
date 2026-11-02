@@ -6,6 +6,7 @@ import * as cuentas from './cuentas';
 import type { Env } from './env';
 import { HttpError, json, Router, withSecurityHeaders, type Ctx } from './http';
 import * as gastos from './gastos';
+import * as movimientos from './movimientos';
 import * as pagar from './pagar';
 
 declare const __VERSION__: string;
@@ -32,6 +33,14 @@ export const router = new Router()
   .on('GET', '/datos/cuentas/:id', cuentas.verCuenta)
   .on('GET', '/datos/cuentas/:id/comprobantes', cuentas.listarComprobantes)
   .on('POST', '/datos/cuentas/:id/revisar', cuentas.revisar)
+  .on('GET', '/datos/cuentas/:id/movimientos', movimientos.movimientos)
+  .on('POST', '/datos/cuentas/:id/leer-captura', movimientos.leerEnCuenta)
+  .on('POST', '/datos/cuentas/:id/comprobantes', movimientos.registrarEnCuenta)
+  .on('POST', '/datos/cuentas/:id/comprobantes/:mov/cancelar', movimientos.cancelar)
+  .on('POST', '/datos/cuentas/:id/comprobantes/:mov/espera', movimientos.ponerEnEspera)
+  .on('GET', '/datos/cuentas/:id/comprobantes/:mov/usos', movimientos.usos)
+  .on('GET', '/datos/cuentas/:id/clientes', movimientos.clientes)
+  .on('POST', '/datos/cuentas/:id/exigir-confirmacion', movimientos.exigirConfirmacion)
   .on('POST', '/datos/cuentas/:id/salidas', cuentas.registrarSalida)
   .on('POST', '/datos/cuentas/:id/leer-ticket', gastos.leerTicketEndpoint)
   .on('GET', '/datos/cuentas/:id/comision', gastos.verComision)
@@ -53,6 +62,7 @@ export const router = new Router()
   .on('GET', '/datos/invitaciones/:token', cuentas.verInvitacion)
   .on('POST', '/datos/invitaciones/:token/aceptar', cuentas.aceptarInvitacion)
   .on('GET', '/datos/pagar/:slug', pagar.verLinkDePago)
+  .on('POST', '/datos/pagar/:slug/leer', pagar.leerEnLink)
   .on('POST', '/datos/pagar/:slug/subir', pagar.subirCaptura)
   .on('POST', '/datos/pagar/:slug/invitado', accesos.invitadoDelLink)
   .on('GET', '/datos/mis-pagos', pagar.misPagos)

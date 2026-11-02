@@ -17,6 +17,8 @@ interface Membresia {
   nombre: string;
   comision_pct: number;
   link_slug: string;
+  exigir_confirmacion: number;
+  creado_en: number;
 }
 
 const pinSchema = z.string().regex(PIN_RE);
@@ -29,7 +31,7 @@ function parse<T>(schema: z.ZodType<T>, data: unknown): T {
 
 export async function membresia(env: Env, cuentaId: string, usuarioId: string): Promise<Membresia> {
   const m = await env.DB.prepare(
-    `SELECT m.cuenta_id, m.rol, m.pin_hash, c.nombre, c.comision_pct, c.link_slug FROM miembros m
+    `SELECT m.cuenta_id, m.rol, m.pin_hash, c.nombre, c.comision_pct, c.link_slug, c.exigir_confirmacion, c.creado_en FROM miembros m
      JOIN cuentas c ON c.id = m.cuenta_id
      WHERE m.cuenta_id = ? AND m.usuario_id = ? AND c.archivada_en IS NULL`,
   )
@@ -140,7 +142,14 @@ export async function verCuenta(ctx: Ctx): Promise<Response> {
   const [desde, hasta] = rangoMes(mes);
   const delMes = await resumen(ctx.env, m.cuenta_id, desde, hasta);
   return json({
-    cuenta: { id: m.cuenta_id, nombre: m.nombre, comision_pct: m.comision_pct, link_slug: m.link_slug },
+    cuenta: {
+      id: m.cuenta_id,
+      nombre: m.nombre,
+      comision_pct: m.comision_pct,
+      link_slug: m.link_slug,
+      exigir_confirmacion: m.exigir_confirmacion === 1,
+      creado_en: m.creado_en,
+    },
     rol: m.rol,
     resumen: {
       ...general,
@@ -158,7 +167,7 @@ export async function listarComprobantes(ctx: Ctx): Promise<Response> {
   const mes = ctx.url.searchParams.get('mes');
   const filtros: string[] = ['k.cuenta_id = ?'];
   const params: (string | number)[] = [m.cuenta_id];
-  if (vista === 'pendientes') filtros.push("k.estado = 'pendiente'");
+  if (vista === 'pendientes') filtros.push("k.estado = 'pendiente' AND k.tipo = 'ingreso'");
   else filtros.push("k.estado <> 'pendiente'");
   if (mes) {
     const [desde, hasta] = rangoMes(mes);
@@ -167,18 +176,20 @@ export async function listarComprobantes(ctx: Ctx): Promise<Response> {
   }
   const { results } = await ctx.env.DB.prepare(
     `SELECT k.id, k.tipo, k.estado, k.monto_cent, k.comision_cent, k.fecha_pago, k.confirmacion, k.pagador,
-       k.beneficiario, k.motivo, k.comercio, k.categoria, k.lectura, k.archivo_clave IS NOT NULL AS tiene_archivo, k.creado_en, k.revisado_en,
+       k.beneficiario, k.motivo, k.notas, k.comercio, k.categoria, k.lectura, k.archivo_clave IS NOT NULL AS tiene_archivo, k.creado_en, k.revisado_en,
+       k.en_espera, k.via, k.plataforma, k.monto_leido_cent,
        s.nombre AS subido_por_nombre, CASE WHEN s.sin_correo = 1 THEN NULL ELSE s.email END AS subido_por_email, r.nombre AS revisado_por_nombre
      FROM comprobantes k
      LEFT JOIN usuarios s ON s.id = k.subido_por
      LEFT JOIN usuarios r ON r.id = k.revisado_por
      WHERE ${filtros.join(' AND ')}
-     ORDER BY k.creado_en ${vista === 'pendientes' ? 'ASC' : 'DESC'} LIMIT 51 OFFSET ?`,
+     ORDER BY k.creado_en ${vista === 'pendientes' ? 'ASC' : 'DESC'} LIMIT ${vista === 'pendientes' ? 501 : 51} OFFSET ?`,
   )
     .bind(...params, offset)
     .all();
-  const filas = results.slice(0, 50);
-  return json({ comprobantes: filas, hay_mas: results.length > 50, siguiente: offset + filas.length });
+  const tope = vista === 'pendientes' ? 500 : 50;
+  const filas = results.slice(0, tope);
+  return json({ comprobantes: filas, hay_mas: results.length > tope, siguiente: offset + filas.length });
 }
 
 /** Aprobar o rechazar en lote. Cada fila solo cambia si sigue pendiente: dos validadores no chocan. */
@@ -188,9 +199,10 @@ export async function revisar(ctx: Ctx): Promise<Response> {
   exigirRol(m, 'dueno', 'validador');
   const datos = parse(
     z.object({
-      ids: z.array(z.string().min(1).max(64)).min(1).max(100),
+      ids: z.array(z.string().min(1).max(64)).min(1).max(500),
       accion: z.enum(['aprobar', 'rechazar']),
       pin: z.string(),
+      motivo: z.string().max(200).optional(),
     }),
     await readJson(ctx.req),
   );
@@ -202,11 +214,12 @@ export async function revisar(ctx: Ctx): Promise<Response> {
     [...new Set(datos.ids)].map((id) =>
       db
         .prepare(
-          `UPDATE comprobantes SET estado = ?, revisado_por = ?, revisado_en = ?,
-             comision_cent = CAST(ROUND(monto_cent * ? / 100.0) AS INTEGER)
+          `UPDATE comprobantes SET estado = ?, revisado_por = ?, revisado_en = ?, en_espera = 0,
+             comision_cent = CAST(ROUND(monto_cent * ? / 100.0) AS INTEGER),
+             motivo = CASE WHEN ? = 'rechazado' THEN COALESCE(?, 'Rechazado en la revisión') ELSE motivo END
            WHERE id = ? AND cuenta_id = ? AND tipo = 'ingreso' AND estado = 'pendiente' RETURNING id`,
         )
-        .bind(estado, u.id, ctx.now, pct, id, m.cuenta_id),
+        .bind(estado, u.id, ctx.now, pct, estado, datos.motivo?.trim() || null, id, m.cuenta_id),
     ),
   );
   const hechos = resultados.flatMap((r) => r.results.map((f) => f.id));

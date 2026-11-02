@@ -1,14 +1,15 @@
-import { CheckCircle2, ImagePlus, KeyRound, ReceiptText, ShieldCheck, Users } from 'lucide-react';
+import { AlertTriangle, Building2, CheckCircle2, ImagePlus, KeyRound, Loader2, ReceiptText, ShieldCheck, Users } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CaptureGuide } from '../components/CaptureGuide';
 import { CampoClave } from '../components/CampoClave';
+import { plataformaBonita } from '../components/Comprobantes';
 import { Aviso, AvisoBorrador, Boton, Campo, Cargando, Pagina, Tarjeta } from '../components/ui';
 import { formatoDinero, MAX_ARCHIVO } from '../../shared/reglas';
-import { api, ApiError } from '../lib/api';
+import { api, ApiError, type Lectura } from '../lib/api';
 import { limpiarBorradores, useBorrador } from '../lib/borrador';
 import { useI18n, useMensajeError } from '../lib/i18n';
-import { prepararImagen } from '../lib/imagen';
+import { imagenParaSubir } from '../lib/imagen';
 import { useSesion } from '../lib/sesion';
 
 export function Landing() {
@@ -59,11 +60,14 @@ export function Pay() {
   const msg = useMensajeError();
   const { usuario, cargando, recargar } = useSesion();
   const location = useLocation();
-  const [info, setInfo] = useState<{ valido: boolean; nombre?: string; lectura_ia?: boolean } | null>(null);
+  const [info, setInfo] = useState<{ valido: boolean; nombre?: string; lectura_ia?: boolean; exigir_confirmacion?: boolean } | null>(null);
   const invitado = useBorrador(`invitado-${slug}`, 'anonimo', { nombre: '' });
-  const [archivo, setArchivo] = useState<File | null>(null);
+  const [archivo, setArchivo] = useState<Blob | null>(null);
   const [vista, setVista] = useState('');
-  const b = useBorrador(`pagar-${slug}`, usuario?.id ?? 'anonimo', { monto: '', confirmacion: '', fecha: '' });
+  const [leyendo, setLeyendo] = useState(false);
+  const [lectura, setLectura] = useState<Lectura | null>(null);
+  const [confirmo, setConfirmo] = useState(false);
+  const b = useBorrador(`pagar-${slug}`, usuario?.id ?? 'anonimo', { monto: '', confirmacion: '', fecha: '', nota: '' });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [faltaNumero, setFaltaNumero] = useState(false);
@@ -71,7 +75,7 @@ export function Pay() {
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    api.get<{ valido: boolean; nombre?: string; lectura_ia?: boolean }>(`/pagar/${slug}`).then(setInfo).catch(() => setInfo({ valido: false }));
+    api.get<{ valido: boolean; nombre?: string; lectura_ia?: boolean; exigir_confirmacion?: boolean }>(`/pagar/${slug}`).then(setInfo).catch(() => setInfo({ valido: false }));
   }, [slug]);
   useEffect(() => () => {
     if (vista) URL.revokeObjectURL(vista);
@@ -134,7 +138,7 @@ export function Pay() {
             <Link to="/home" className="flex-1">
               <Boton variante="secundario" className="w-full">{t('home.myPayments')}</Boton>
             </Link>
-            <Boton className="flex-1" onClick={() => { setListo(null); setArchivo(null); setVista(''); }}>
+            <Boton className="flex-1" onClick={() => { setListo(null); setArchivo(null); setVista(''); setLectura(null); setConfirmo(false); }}>
               {t('pay.another')}
             </Boton>
           </div>
@@ -143,28 +147,53 @@ export function Pay() {
     );
   }
 
-  function elegir(f: File | undefined) {
+  async function elegir(f: File | undefined) {
     setError('');
     setFaltaNumero(false);
     if (!f) return;
     if (!f.type.startsWith('image/')) return setError(t('err.no_es_imagen'));
-    setArchivo(f);
-    setVista(URL.createObjectURL(f));
+    setLectura(null);
+    setConfirmo(false);
+    const blob = await imagenParaSubir(f);
+    if (blob.size > MAX_ARCHIVO) return setError(t('err.archivo_grande'));
+    setArchivo(blob);
+    setVista(URL.createObjectURL(blob));
+    if (!info?.lectura_ia) return;
+    setLeyendo(true);
+    try {
+      const form = new FormData();
+      form.append('archivo', blob, 'captura');
+      const r = await api.form<{ lectura: Lectura | null; repetida?: boolean }>(`/pagar/${slug}/leer`, form);
+      setLectura(r.lectura);
+      if (r.repetida) setError(t('err.comprobante_repetido'));
+      // El monto sale SIEMPRE de la captura actual; quien pagó lo puede corregir.
+      if (r.lectura?.monto_cent) b.set('monto', (r.lectura.monto_cent / 100).toFixed(2));
+    } catch {
+      setLectura({ monto_cent: null, fecha: null, confirmacion: null, pagador: null, pagador_correo: null, beneficiario: null, beneficiario_correo: null, plataforma: null, estado: 'failed' });
+    } finally {
+      setLeyendo(false);
+    }
   }
+
+  const exige = info.exigir_confirmacion !== false;
+  const faltaCodigo = Boolean(info.lectura_ia && lectura && !lectura.confirmacion && exige);
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
-    if (!archivo) return;
-    setEnviando(true);
     setError('');
+    if (!archivo) return setError(t('pay.needImage'));
+    const montoCent = Math.round((Number(b.valores.monto.replace(',', '.')) || 0) * 100);
+    if (montoCent <= 0) return setError(t('pay.needAmount'));
+    if (faltaCodigo) return setError(t('pay.noCode'));
+    if (!confirmo) return setError(t('pay.confirmFirst', { name: nombre }));
+    setEnviando(true);
     setFaltaNumero(false);
     try {
-      const blob = await prepararImagen(archivo);
-      if (blob.size > MAX_ARCHIVO) throw new ApiError(413, 'archivo_grande', {});
       const form = new FormData();
-      form.append('archivo', blob, 'captura');
+      form.append('archivo', archivo, 'captura');
+      form.append('monto', b.valores.monto);
+      form.append('nota', b.valores.nota);
       if (!info?.lectura_ia) {
-        form.append('monto', b.valores.monto);
         form.append('confirmacion', b.valores.confirmacion);
         form.append('fecha', b.valores.fecha);
       }
@@ -182,17 +211,25 @@ export function Pay() {
 
   return (
     <Pagina angosta>
-      <h1 className="text-xl font-bold">{t('pay.title')}</h1>
-      <p className="mb-4 text-tenue">{t('pay.for', { name: nombre })}</p>
+      <Tarjeta className="mb-4 border-green-700/60">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-tenue">{t('pay.payingTo')}</p>
+        <p className="flex items-center gap-2 text-2xl font-bold">
+          <Building2 className="h-6 w-6 shrink-0 text-marca" aria-hidden /> <span className="truncate">{nombre}</span>
+        </p>
+        <p className="mt-1 text-xs text-tenue">{t('pay.onlyThis')}</p>
+      </Tarjeta>
       {!archivo && <CaptureGuide payeeName={nombre} />}
       <form onSubmit={enviar} className="mt-4 space-y-4">
-        <input ref={input} type="file" accept="image/*" className="hidden" onChange={(e) => elegir(e.target.files?.[0])} data-testid="archivo" />
+        <h2 className="font-semibold">{t('pay.step1')}</h2>
+        <input ref={input} type="file" accept="image/*" className="hidden" onChange={(e) => void elegir(e.target.files?.[0])} data-testid="archivo" />
         {vista ? (
           <div className="space-y-2">
-            <img src={vista} alt="" className="mx-auto max-h-80 rounded-xl border border-borde object-contain" />
-            <Boton type="button" variante="fantasma" className="w-full" onClick={() => input.current?.click()}>
+            <button type="button" onClick={() => input.current?.click()} className="block w-full rounded-xl bg-black">
+              <img src={vista} alt="" className="mx-auto max-h-80 rounded-xl object-contain" />
+            </button>
+            <button type="button" className="w-full text-sm text-tenue underline hover:text-white" onClick={() => input.current?.click()}>
               {t('pay.change')}
-            </Boton>
+            </button>
           </div>
         ) : (
           <button
@@ -200,25 +237,69 @@ export function Pay() {
             onClick={() => input.current?.click()}
             className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-borde bg-panel px-4 py-8 text-tenue hover:border-marca hover:text-white"
           >
-            <ImagePlus className="h-8 w-8" aria-hidden />
-            <span className="font-semibold">{t('pay.choose')}</span>
+            <ImagePlus className="h-8 w-8 text-marca" aria-hidden />
+            <span className="font-semibold text-white">{t('pay.choose')}</span>
+            <span className="text-xs">{t('pay.chooseHint')}</span>
           </button>
         )}
-
-        {!info.lectura_ia && (
-          <div className="space-y-3">
-            <AvisoBorrador visible={b.recuperado} onEmpezar={b.limpiar} />
-            <Campo etiqueta={t('pay.amount')} inputMode="decimal" required placeholder="0.00" value={b.valores.monto} onChange={(e) => b.set('monto', e.target.value)} />
-            <Campo etiqueta={t('pay.confirmation')} required placeholder="0000000000" value={b.valores.confirmacion} onChange={(e) => b.set('confirmacion', e.target.value)} />
-            <Campo etiqueta={t('pay.date')} type="date" value={b.valores.fecha} onChange={(e) => b.set('fecha', e.target.value)} />
+        {leyendo && (
+          <p className="flex items-center gap-2 text-sm text-tenue">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {t('pay.reading')}
+          </p>
+        )}
+        {lectura && !faltaCodigo && (lectura.confirmacion || lectura.monto_cent || lectura.plataforma) && (
+          <div className="space-y-0.5 rounded-xl border border-borde bg-white/5 p-3 text-sm" data-testid="leido">
+            {lectura.confirmacion && (
+              <p>
+                <span className="text-tenue">{t('account.confirmation')}:</span> <span className="font-mono font-semibold">{lectura.confirmacion}</span>
+              </p>
+            )}
+            {lectura.monto_cent && (
+              <p>
+                <span className="text-tenue">{t('pay.amountRead')}:</span> <span className="font-mono">{formatoDinero(lectura.monto_cent, idioma)}</span>
+              </p>
+            )}
+            {lectura.plataforma && (
+              <p>
+                <span className="text-tenue">{t('read.platform')}:</span> {plataformaBonita(lectura.plataforma)}
+              </p>
+            )}
           </div>
         )}
+        {faltaCodigo && (
+          <>
+            <div className="flex gap-2 rounded-xl border border-red-700/60 bg-red-900/30 p-3 text-sm text-red-200" data-testid="falta-codigo">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden /> {t('pay.noCodeLong')}
+            </div>
+            <CaptureGuide payeeName={nombre} alert />
+          </>
+        )}
+
+        <h2 className="pt-2 font-semibold">{t('pay.step2')}</h2>
+        <div className="space-y-3">
+          <AvisoBorrador visible={b.recuperado} onEmpezar={b.limpiar} />
+          <Campo etiqueta={t('pay.amount')} inputMode="decimal" placeholder={t('pay.amountPh')} className="text-lg" value={b.valores.monto} onChange={(e) => b.set('monto', e.target.value)} />
+          {!info.lectura_ia && (
+            <>
+              <Campo etiqueta={t('pay.confirmation')} required={exige} placeholder="0000000000" value={b.valores.confirmacion} onChange={(e) => b.set('confirmacion', e.target.value)} />
+              <Campo etiqueta={t('pay.date')} type="date" value={b.valores.fecha} onChange={(e) => b.set('fecha', e.target.value)} />
+            </>
+          )}
+          <Campo etiqueta={t('pay.note')} maxLength={300} placeholder={t('pay.notePh')} value={b.valores.nota} onChange={(e) => b.set('nota', e.target.value)} />
+        </div>
+        <label className="flex items-start gap-3 rounded-xl border border-borde p-3 text-sm">
+          <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-green-500" checked={confirmo} onChange={(e) => setConfirmo(e.target.checked)} />
+          <span>
+            {t('pay.confirmFor')} <strong>{nombre}</strong>.
+          </span>
+        </label>
 
         {error && <Aviso tipo="error">{error}</Aviso>}
-        {faltaNumero && <CaptureGuide payeeName={nombre} alert />}
-        <Boton type="submit" cargando={enviando} disabled={!archivo} className="w-full">
-          {enviando ? t('pay.sending') : t('pay.send')}
+        {faltaNumero && !faltaCodigo && <CaptureGuide payeeName={nombre} alert />}
+        <Boton type="submit" cargando={enviando} disabled={leyendo} className="w-full">
+          {t('pay.send')}
         </Boton>
+        <p className="text-center text-xs text-tenue">{t('pay.footer')}</p>
       </form>
     </Pagina>
   );

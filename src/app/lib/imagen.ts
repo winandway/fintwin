@@ -16,3 +16,15 @@ export async function prepararImagen(file: File): Promise<Blob> {
     return file;
   }
 }
+
+const TIPOS_DIRECTOS = ['image/jpeg', 'image/png', 'image/webp'];
+
+/**
+ * La imagen que se sube: la ORIGINAL si es liviana (así la misma captura da la misma huella en
+ * cualquier teléfono y la repetida se detecta aunque la IA no la lea); si es pesada o de otro
+ * formato, achicada. Se prepara una sola vez y se usa igual para leer y para enviar.
+ */
+export async function imagenParaSubir(file: File): Promise<Blob> {
+  if (TIPOS_DIRECTOS.includes(file.type) && file.size <= 4 * 1024 * 1024) return file;
+  return prepararImagen(file);
+}

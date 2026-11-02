@@ -28,10 +28,12 @@ Duración ideal: dos o tres minutos. Sin hablar; no hace falta audio.
 6. **Agregar a quien sube las capturas:** en Demo Shop toca «Add people» → «Add a person» → nombre «Maria» →
    «Upload receipts» → PIN 4321. Que se vea el código y toca **Send by WhatsApp** para que salga la hoja de
    compartir del iPhone; ciérrala.
-7. Vuelve a Demo Shop → «Payment link and QR» → **Open payment page** → adjunta la captura de tus fotos →
-   escribe monto 85.50 y número de confirmación TRX48219554 → envía. Si sale el permiso de fotos o de avisos,
-   toca **Permitir**.
-8. Vuelve a Demo Shop: el comprobante aparece **pendiente**. Márcalo y **apruébalo** con el PIN 4321.
+7. Vuelve a Demo Shop → «Payment link and QR» → **Open payment page** → toca «Take or choose the photo» y
+   elige una captura de pago de tus fotos que muestre el monto y el número de confirmación. La IA la lee sola:
+   aparecen la confirmación y el monto. Marca «I confirm this payment is for Demo Shop» → **Send receipt**. Si
+   sale el permiso de fotos o de avisos, toca **Permitir**.
+8. Vuelve a Demo Shop: el comprobante aparece en «Movements» con el punto naranja (pendiente). Tócalo para
+   abrirlo → **Confirm** → PIN 4321. El punto se pone verde y el total sube.
 9. **Borrar el usuario:** menú de tu nombre → «Delete my user» → escribe la contraseña → confirmar. Que se vea
    que te saca de la app.
 10. **Sign in** no hace falta grabarlo aparte: el paso 4 ya entra. Si quieres, antes del paso 9 toca

@@ -56,7 +56,14 @@ export async function verComision(ctx: Ctx): Promise<Response> {
   )
     .bind(m.cuenta_id, desdeMes)
     .all();
-  return json({ ...t, gastos: gastos.results, por_categoria_mes: porCategoria.results });
+  // La comisión de cada ingreso aprobado, para «hoy / ayer / este mes», por día y por mes (en la hora del teléfono).
+  const generada = await ctx.env.DB.prepare(
+    `SELECT creado_en, comision_cent FROM comprobantes
+     WHERE cuenta_id = ? AND tipo = 'ingreso' AND estado = 'aprobado' AND comision_cent > 0 ORDER BY creado_en DESC LIMIT 5000`,
+  )
+    .bind(m.cuenta_id)
+    .all();
+  return json({ ...t, gastos: gastos.results, por_categoria_mes: porCategoria.results, generada_lista: generada.results });
 }
 
 /** Un gasto pagado con la comisión: ticket obligatorio, PIN y monto dentro de lo disponible. */

@@ -10,6 +10,7 @@ export interface Env {
   SITIO?: string;
   SITIO_TOKEN?: string;
   GEMINI_API_KEY?: string;
+  GEMINI_API_KEY_BACKUP?: string;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
   /** Secreto de la puerta del gerente de correo (casos de ayuda). Sin él, la puerta no existe. */

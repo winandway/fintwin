@@ -29,6 +29,51 @@ interface Comision {
   disponible_cent: number;
   gastos: Gasto[];
   por_categoria_mes: { categoria: string; total_cent: number; cantidad: number }[];
+  generada_lista: { creado_en: number; comision_cent: number }[];
+}
+
+const diaLocal = (ms: number) => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/** Como el original: lo generado hoy, ayer y este mes; por día; y por mes con lo que queda acumulado. */
+function cuentasDeComision(d: Comision) {
+  const hoy = diaLocal(Date.now());
+  const ayer = diaLocal(Date.now() - 86400000);
+  const mes = hoy.slice(0, 7);
+  const porDia = new Map<string, { total: number; n: number }>();
+  const porMes = new Map<string, { generado: number; gastado: number }>();
+  for (const g of d.generada_lista) {
+    const dia = diaLocal(g.creado_en);
+    const x = porDia.get(dia) ?? { total: 0, n: 0 };
+    porDia.set(dia, { total: x.total + g.comision_cent, n: x.n + 1 });
+    const m = porMes.get(dia.slice(0, 7)) ?? { generado: 0, gastado: 0 };
+    porMes.set(dia.slice(0, 7), { ...m, generado: m.generado + g.comision_cent });
+  }
+  for (const g of d.gastos) {
+    const k = diaLocal(g.creado_en).slice(0, 7);
+    const m = porMes.get(k) ?? { generado: 0, gastado: 0 };
+    porMes.set(k, { ...m, gastado: m.gastado + g.monto_cent });
+  }
+  let queda = 0;
+  const meses = [...porMes.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => {
+      queda += v.generado - v.gastado;
+      return { mes: k, ...v, queda };
+    })
+    .reverse();
+  const delMes = [...porDia.entries()].filter(([k]) => k.startsWith(mes)).reduce((s, [, v]) => s + v.total, 0);
+  return {
+    hoy: porDia.get(hoy)?.total ?? 0,
+    ayer: porDia.get(ayer)?.total ?? 0,
+    mes: delMes,
+    // Lo que viene de meses anteriores sin gastar.
+    arrastre: Math.max(0, d.disponible_cent - Math.max(0, delMes - d.gastos.filter((g) => diaLocal(g.creado_en).startsWith(mes)).reduce((s, g) => s + g.monto_cent, 0))),
+    dias: [...porDia.entries()].sort(([a], [b]) => b.localeCompare(a)).slice(0, 60),
+    meses,
+  };
 }
 
 /** Gastos pagados con la comisión: cada uno con su ticket, leído por la IA. */
@@ -103,6 +148,8 @@ export function Commission() {
         </p>
       </Tarjeta>
 
+      <ResumenComision datos={datos} />
+
       {aviso && <div className="mb-3"><Aviso tipo="exito">{aviso}</Aviso></div>}
 
       <Tarjeta className="mb-4">
@@ -164,5 +211,80 @@ export function Commission() {
       )}
       <Visor id={visor} onCerrar={() => setVisor(null)} ruta="/datos/gasto-archivo/" />
     </Pagina>
+  );
+}
+
+function ResumenComision({ datos }: { datos: Comision }) {
+  const { t, idioma } = useI18n();
+  const [verDias, setVerDias] = useState(false);
+  const c = cuentasDeComision(datos);
+  const dinero = (x: number) => formatoDinero(x, idioma);
+  const nombreMes = (k: string) => {
+    const [y, m] = k.split('-').map(Number) as [number, number];
+    return new Date(y, m - 1, 1).toLocaleDateString(idioma === 'es' ? 'es-US' : 'en-US', { month: 'short', year: 'numeric' });
+  };
+  return (
+    <div className="mb-4 space-y-3">
+      <div className="grid grid-cols-3 gap-2 text-center">
+        {[
+          [t('fee.today'), c.hoy, 'text-green-400'],
+          [t('fee.yesterday'), c.ayer, ''],
+          [t('mov.thisMonth'), c.mes, ''],
+        ].map(([k, v, cl]) => (
+          <div key={k as string} className="rounded-xl border border-borde bg-white/5 px-1 py-2">
+            <p className="text-[10px] font-semibold uppercase text-tenue">{k}</p>
+            <p className={`font-mono text-sm font-bold ${cl as string}`}>{dinero(v as number)}</p>
+          </div>
+        ))}
+      </div>
+      {c.arrastre > 0 && (
+        <p className="rounded-xl border border-amber-700/50 bg-amber-900/20 p-3 text-xs text-amber-200">{t('fee.carry', { amount: dinero(c.arrastre) })}</p>
+      )}
+      {c.dias.length > 0 && (
+        <Tarjeta>
+          <button onClick={() => setVerDias((v) => !v)} className="flex w-full items-center justify-between text-sm font-semibold">
+            {t('fee.byDay', { n: c.dias.length })} <span className="text-tenue">{verDias ? '−' : '+'}</span>
+          </button>
+          {verDias && (
+            <div className="mt-2 max-h-48 space-y-1 overflow-y-auto text-sm">
+              {c.dias.map(([dia, v]) => (
+                <div key={dia} className="flex justify-between gap-2">
+                  <span className="text-tenue">
+                    {new Date(`${dia}T12:00:00`).toLocaleDateString(idioma === 'es' ? 'es-US' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · {t('fee.receiptsN', { n: v.n })}
+                  </span>
+                  <span className="font-mono text-green-400">+ {dinero(v.total)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Tarjeta>
+      )}
+      {c.meses.length > 0 && (
+        <Tarjeta>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-tenue">{t('fee.byMonth')}</h2>
+          <table className="w-full text-sm" data-testid="comision-por-mes">
+            <thead>
+              <tr className="text-left text-[11px] text-tenue">
+                <th className="font-medium">{t('mov.month')}</th>
+                <th className="text-right font-medium">{t('fee.generated')}</th>
+                <th className="text-right font-medium">{t('account.outflows')}</th>
+                <th className="text-right font-medium">{t('fee.left')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.meses.map((m) => (
+                <tr key={m.mes}>
+                  <td className="py-0.5">{nombreMes(m.mes)}</td>
+                  <td className="text-right font-mono text-green-400">{dinero(m.generado)}</td>
+                  <td className="text-right font-mono">−{dinero(m.gastado)}</td>
+                  <td className="text-right font-mono font-bold">{dinero(m.queda)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-2 text-[11px] text-tenue">{t('fee.leftNote')}</p>
+        </Tarjeta>
+      )}
+    </div>
   );
 }

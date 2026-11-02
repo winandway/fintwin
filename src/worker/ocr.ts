@@ -7,39 +7,134 @@ export interface Lectura {
   fecha: string | null;
   confirmacion: string | null;
   pagador: string | null;
+  pagador_correo: string | null;
   beneficiario: string | null;
+  beneficiario_correo: string | null;
+  direccion: 'in' | 'out' | null;
+  plataforma: string | null;
+  confianza: number;
+  /** success = monto + código + una de las partes con confianza ≥ 0.6; failed = sin monto o confianza 0. */
+  estado: 'success' | 'partial' | 'failed';
 }
 
 // Modelo de texto aprobado y barato (regla global de modelos de IA).
 const MODELO = 'gemini-2.5-flash';
 
-const PROMPT = `You read payment receipts: bank transfer screenshots, Zelle/Venmo/Cash App/PayPal confirmations, deposit slips and invoices.
-Return JSON only. Fields:
-- is_receipt: true only if the image is a payment receipt or invoice.
-- amount: the amount paid as a number (no currency symbol), or null.
-- date: the payment date as YYYY-MM-DD, or null.
-- confirmation: the confirmation / reference / transaction number exactly as printed, or null if it is not visible in full.
-- payer: who sent the money, or null.
-- payee: who received the money, or null.
-Never guess a confirmation number. If it is cut off or blurry, return null.`;
+// La misma instrucción del FinTwin original (Windoce Hub, analyze-receipt), palabra por palabra.
+const PROMPT = `You are a payment receipt data extractor.
+Analyze this image and extract fields as JSON.
+Return ONLY valid JSON, no markdown, no explanations.
+Schema:
+{
+  "amount": number or null,
+  "confirmation_code": string or null,
+  "sender_name": string or null,
+  "sender_email": string or null,
+  "recipient_name": string or null,
+  "recipient_email": string or null,
+  "direction": "in" or "out" or null,
+  "transaction_date": ISO 8601 string or null,
+  "platform": zelle|zinli|paypal|cashapp|venmo|other|null,
+  "confidence": number 0 to 1
+}
+Rules:
+- amount: the numeric amount sent or received. Not the balance. Not fees.
+- confirmation_code: transaction/reference/confirmation code
+- sender_name: person/business who SENT the money (the one with funds leaving)
+- sender_email: sender email if visible
+- recipient_name: person/business who RECEIVED the money (destination)
+- recipient_email: recipient email if visible
+- transaction_date: when the tx happened (ISO 8601)
+- platform: payment app this receipt is from
+- confidence: 1.0 perfect, 0.0 illegible
+Extract BOTH sides when visible. In a 'money sent' capture, the
+recipient info is usually clearest (name + email of destination).
+In a 'money received' capture, the sender info is usually clearest.
 
-function texto(v: unknown): string | null {
-  return typeof v === 'string' && v.trim() ? v.trim().slice(0, 120) : null;
+DIRECTION DETECTION (critical):
+You will be told the account name of 'our account' via a line that starts
+with 'OUR_ACCOUNT:'. Decide the direction relative to this account:
+- 'in' = money came INTO our account. This happens when the recipient
+  (the party being paid) matches our account name — look for variations,
+  LLC/INC suffixes, partial matches, or 'Enviado a <us>', 'Transferencia
+  recibida', 'Money received from', 'Payment received'.
+- 'out' = money went OUT of our account. This happens when the sender
+  (the party paying) matches our account name — look for 'Desde <us>',
+  'From <us>', 'Su pago fue enviado', 'Dinero enviado', 'Money sent'.
+- null = account name is not clearly on either side, OR no account name
+  was provided. DO NOT guess. Set direction to null.
+Account name matching is fuzzy: 'Windoce' matches 'WINDOCE, LLC',
+'Windoce LLC Operaciones', 'Windoce.com', etc. Be reasonably flexible.
+
+If a field is unclear, set it to null. NEVER guess or make up data.
+If the image is not a payment receipt, return all null and confidence 0.`;
+
+const PLATAFORMAS = ['zelle', 'zinli', 'paypal', 'cashapp', 'venmo', 'other'];
+
+function texto(v: unknown, max = 120): string | null {
+  return typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null;
+}
+
+/** El PRIMER objeto JSON completo de la respuesta, contando llaves (candado C-OCR-JSON-1 del original). */
+export function primerObjetoJson(raw: string): unknown {
+  const s = raw.replace(/```(?:json)?/g, '');
+  const inicio = s.indexOf('{');
+  if (inicio < 0) throw new Error('No JSON object in model output');
+  let nivel = 0;
+  let enTexto = false;
+  let escape = false;
+  for (let i = inicio; i < s.length; i++) {
+    const c = s[i];
+    if (enTexto) {
+      if (escape) escape = false;
+      else if (c === '\\') escape = true;
+      else if (c === '"') enTexto = false;
+      continue;
+    }
+    if (c === '"') enTexto = true;
+    else if (c === '{') nivel++;
+    else if (c === '}') {
+      nivel--;
+      if (nivel === 0) return JSON.parse(s.slice(inicio, i + 1));
+    }
+  }
+  throw new Error('No JSON object in model output');
 }
 
 export function interpretar(crudo: unknown): Lectura {
   const o = (crudo && typeof crudo === 'object' ? crudo : {}) as Record<string, unknown>;
-  const fecha = texto(o.date);
-  const confirmacion = texto(o.confirmation);
+  const fechaIso = texto(o.transaction_date ?? o.date);
+  const fecha = fechaIso && /^\d{4}-\d{2}-\d{2}/.test(fechaIso) ? fechaIso.slice(0, 10) : null;
+  const confirmacion = texto(o.confirmation_code ?? o.confirmation);
+  const monto = aCentavos(typeof o.amount === 'number' || typeof o.amount === 'string' ? o.amount : null);
+  const pagador = texto(o.sender_name ?? o.payer);
+  const beneficiario = texto(o.recipient_name ?? o.payee);
+  const plat = texto(o.platform, 20)?.toLowerCase() ?? null;
+  const confianza = typeof o.confidence === 'number' && Number.isFinite(o.confidence) ? Math.max(0, Math.min(1, o.confidence)) : monto ? 0.5 : 0;
+  const conf = normalizarConfirmacion(confirmacion) ? confirmacion : null;
+  // Clasificación del original: la plataforma ya no es obligatoria.
+  const estado: Lectura['estado'] =
+    confianza === 0 || !monto ? 'failed' : conf && (pagador || beneficiario) && confianza >= 0.6 ? 'success' : 'partial';
   return {
-    es_comprobante: o.is_receipt === true,
-    monto_cent: aCentavos(typeof o.amount === 'number' || typeof o.amount === 'string' ? o.amount : null),
-    fecha: fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha : null,
-    confirmacion: normalizarConfirmacion(confirmacion) ? confirmacion : null,
-    pagador: texto(o.payer),
-    beneficiario: texto(o.payee),
+    es_comprobante: o.is_receipt === true || estado !== 'failed',
+    monto_cent: monto,
+    fecha,
+    confirmacion: conf,
+    pagador,
+    pagador_correo: texto(o.sender_email),
+    beneficiario,
+    beneficiario_correo: texto(o.recipient_email),
+    direccion: o.direction === 'in' || o.direction === 'out' ? o.direction : null,
+    plataforma: plat && PLATAFORMAS.includes(plat) ? plat : plat ? 'other' : null,
+    confianza,
+    estado,
   };
 }
+
+export const LECTURA_VACIA: Lectura = {
+  es_comprobante: false, monto_cent: null, fecha: null, confirmacion: null, pagador: null, pagador_correo: null,
+  beneficiario: null, beneficiario_correo: null, direccion: null, plataforma: null, confianza: 0, estado: 'failed',
+};
 
 function aBase64(bytes: Uint8Array): string {
   let bin = '';
@@ -52,25 +147,51 @@ export function iaDisponible(env: Env): boolean {
   return Boolean(env.GEMINI_API_KEY);
 }
 
-/** Lee la captura en el servidor. Lanza si la IA no responde: quien llama decide qué hacer. */
-export async function leerCaptura(env: Env, bytes: Uint8Array, mime: string): Promise<Lectura> {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`,
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY ?? '' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: mime, data: aBase64(bytes) } }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0 },
-      }),
-      signal: AbortSignal.timeout(30000),
-    },
-  );
-  if (!res.ok) throw new Error(`gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
+const SIN_FILTROS = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT'].map(
+  (category) => ({ category, threshold: 'BLOCK_NONE' }),
+);
+
+async function llamarGemini(llave: string, partes: unknown[], maxTokens: number): Promise<unknown> {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-goog-api-key': llave },
+    body: JSON.stringify({
+      contents: [{ parts: partes }],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0, maxOutputTokens: maxTokens, thinkingConfig: { thinkingBudget: 0 } },
+      safetySettings: SIN_FILTROS,
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!res.ok) {
+    const e = new Error(`gemini ${res.status}: ${(await res.text()).slice(0, 300)}`) as Error & { status?: number };
+    e.status = res.status;
+    throw e;
+  }
   const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
   const raw = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
-  const limpio = raw.replace(/^```(?:json)?\s*|\s*```$/g, '');
-  return interpretar(JSON.parse(limpio));
+  if (!raw.trim()) throw new Error('Empty response from Gemini');
+  return primerObjetoJson(raw);
+}
+
+/**
+ * Llave principal; con 429/403 pasa a la de respaldo si existe; cualquier otro error reintenta una
+ * vez a los 500 ms. Igual que el original.
+ */
+async function conRespaldo(env: Env, partes: unknown[], maxTokens: number): Promise<unknown> {
+  try {
+    return await llamarGemini(env.GEMINI_API_KEY ?? '', partes, maxTokens);
+  } catch (e) {
+    const status = (e as { status?: number }).status;
+    if ((status === 429 || status === 403) && env.GEMINI_API_KEY_BACKUP) return llamarGemini(env.GEMINI_API_KEY_BACKUP, partes, maxTokens);
+    await new Promise((r) => setTimeout(r, 500));
+    return llamarGemini(env.GEMINI_API_KEY ?? '', partes, maxTokens);
+  }
+}
+
+/** Lee la captura en el servidor. Lanza si la IA no responde: quien llama decide qué hacer. */
+export async function leerCaptura(env: Env, bytes: Uint8Array, mime: string, cuentaNombre?: string): Promise<Lectura> {
+  const instruccion = `${PROMPT}\n\nOUR_ACCOUNT: ${cuentaNombre?.trim() || '(not provided)'}`;
+  return interpretar(await conRespaldo(env, [{ text: instruccion }, { inline_data: { mime_type: mime, data: aBase64(bytes) } }], 2048));
 }
 
 // ------------------------------------------------------------------ tickets de compra
@@ -111,17 +232,5 @@ export function interpretarTicket(crudo: unknown): LecturaTicket {
 }
 
 export async function leerTicket(env: Env, bytes: Uint8Array, mime: string): Promise<LecturaTicket> {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY ?? '' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: PROMPT_TICKET }, { inline_data: { mime_type: mime, data: aBase64(bytes) } }] }],
-      generationConfig: { responseMimeType: 'application/json', temperature: 0 },
-    }),
-    signal: AbortSignal.timeout(30000),
-  });
-  if (!res.ok) throw new Error(`gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-  const raw = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
-  return interpretarTicket(JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, '')));
+  return interpretarTicket(await conRespaldo(env, [{ text: PROMPT_TICKET }, { inline_data: { mime_type: mime, data: aBase64(bytes) } }], 1024));
 }

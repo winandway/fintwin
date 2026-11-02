@@ -1,4 +1,5 @@
-import { Building2, ChevronRight, KeyRound, Plus, Receipt, Upload } from 'lucide-react';
+import { Building2, ChevronRight, KeyRound, ListChecks, LogOut, Plus, QrCode, Receipt, RefreshCw, Send, Trash2, Upload, Users, Wallet } from 'lucide-react';
+import { MenuPuntos } from '../components/MenuPuntos';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CampoClave } from '../components/CampoClave';
@@ -23,35 +24,34 @@ export function Estado({ estado }: { estado: 'pendiente' | 'aprobado' | 'rechaza
 
 export function Home() {
   const { t, idioma } = useI18n();
-  const { usuario } = useSesion();
+  const { usuario, salir } = useSesion();
   const msg = useMensajeError();
-  const [tab, setTab] = useState<'cuentas' | 'pagos'>('cuentas');
+  const navigate = useNavigate();
   const [cuentas, setCuentas] = useState<CuentaLista[] | null>(null);
   const [pagos, setPagos] = useState<MisPagos | null>(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  const cargar = () => {
     api
       .get<{ cuentas: CuentaLista[] }>('/cuentas')
-      .then((r) => {
-        setCuentas(r.cuentas);
-        if (r.cuentas.length === 0) setTab('pagos');
-      })
+      .then((r) => setCuentas(r.cuentas))
       .catch((e) => setError(msg(e)));
     api.get<MisPagos>('/mis-pagos').then(setPagos).catch(() => setPagos({ empresas: [], comprobantes: [] }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(cargar, []);
 
   if (error) return <Pagina><Aviso tipo="error">{error}</Aviso></Pagina>;
-  if (!cuentas || (cuentas.length === 0 && !pagos)) return <Cargando />;
-  const saludo = <h1 className="mb-4 text-2xl font-bold">{t('home.hi', { name: usuario?.nombre.split(' ')[0] ?? '' })}</h1>;
+  if (!cuentas || !pagos) return <Cargando />;
   const sinCorreo = Boolean(usuario?.sin_correo);
+  const primerNombre = usuario?.nombre.split(' ')[0] ?? '';
+  const dinero = (c: number) => formatoDinero(c, idioma);
 
-  // Primera vez: sin negocios ni pagos. Dos caminos claros, sin pestañas vacías.
-  if (cuentas.length === 0 && pagos && pagos.empresas.length === 0 && pagos.comprobantes.length === 0) {
+  // Primera vez: sin negocios ni pagos. Dos caminos claros.
+  if (cuentas.length === 0 && pagos.empresas.length === 0 && pagos.comprobantes.length === 0) {
     return (
       <Pagina angosta>
-        {saludo}
+        <h1 className="mb-4 text-2xl font-bold">{t('home.hi', { name: primerNombre })}</h1>
         <p className="mb-3 text-tenue">{t('home.welcome')}</p>
         <div className="space-y-3">
           {!sinCorreo && (
@@ -79,92 +79,150 @@ export function Home() {
     );
   }
 
-  // Quien solo sube capturas no tiene negocios propios: va directo a sus pagos, sin pestañas.
-  const soloPagos = cuentas.length === 0;
+  const total = cuentas.reduce((s, c) => s + c.total_cent, 0);
+  const pendientes = cuentas.reduce((s, c) => s + c.pendientes, 0);
+  const conPendientes = cuentas.find((c) => c.pendientes > 0);
+  const ultimoPago = (nombre: string) => pagos.comprobantes.find((k) => k.cuenta_nombre === nombre)?.creado_en ?? null;
+  const fechaLarga = (ms: number) => new Date(ms).toLocaleDateString(idioma === 'es' ? 'es-US' : 'en-US', { dateStyle: 'medium' });
+  const titulo = 'mb-2 mt-6 px-1 text-sm font-semibold uppercase tracking-wider text-gray-300';
 
   return (
-    <Pagina>
-      {saludo}
-      <div className={`mb-4 grid grid-cols-2 gap-1 rounded-xl border border-borde bg-panel p-1${soloPagos ? ' hidden' : ''}`} role="tablist">
-        {(['cuentas', 'pagos'] as const).map((k) => (
-          <button
-            key={k}
-            role="tab"
-            aria-selected={tab === k}
-            onClick={() => setTab(k)}
-            className={`rounded-lg py-2 text-sm font-semibold ${tab === k ? 'bg-white/10 text-white' : 'text-tenue'}`}
-          >
-            {k === 'cuentas' ? t('home.myAccounts') : t('home.myPayments')}
-          </button>
-        ))}
+    <Pagina angosta>
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm text-tenue">{t('home.hello')}</p>
+          <h1 className="truncate text-xl font-bold">{primerNombre}</h1>
+        </div>
+        <MenuPuntos
+          opciones={[
+            { texto: t('home.refresh'), icono: <RefreshCw className="h-4 w-4" />, onClick: cargar },
+            { texto: t('nav.signOut'), icono: <LogOut className="h-4 w-4" />, onClick: () => void salir() },
+            { texto: t('nav.deleteUser'), icono: <Trash2 className="h-4 w-4" />, onClick: () => navigate('/delete-account'), peligro: true },
+          ]}
+        />
       </div>
 
-      {tab === 'cuentas' ? (
-        <div className="space-y-3">
-          {cuentas.length === 0 && <p className="text-sm text-tenue">{t('home.emptyAccounts')}</p>}
-          {cuentas.map((c) => (
-            <Link key={c.id} to={`/accounts/${c.id}`} className="block">
-              <Tarjeta className="flex items-center justify-between gap-3 hover:border-tenue">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">{c.nombre}</p>
-                  <p className="text-xs text-tenue">
-                    {c.rol === 'dueno' ? t('home.owner') : t('home.validator')}
-                    {c.pendientes > 0 && <span className="ml-2 font-semibold text-amber-300">· {t('home.pending', { n: c.pendientes })}</span>}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-semibold">{formatoDinero(c.total_cent, idioma)}</span>
-                  <ChevronRight className="h-4 w-4 text-tenue" aria-hidden />
-                </div>
-              </Tarjeta>
-            </Link>
-          ))}
-          {!sinCorreo && (
-            <Link to="/accounts/new">
-              <Boton variante="secundario" className="mt-2 w-full">
-                <Plus className="h-4 w-4" aria-hidden /> {t('home.newAccount')}
-              </Boton>
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {!pagos || (pagos.empresas.length === 0 && pagos.comprobantes.length === 0) ? (
-            <p className="text-sm text-tenue">{t('home.emptyPayments')}</p>
-          ) : (
-            <>
-              {pagos.empresas.map((e) => (
-                <Link key={e.link_slug} to={`/pay/${e.link_slug}`}>
-                  <Tarjeta className="flex items-center justify-between gap-3 hover:border-tenue">
-                    <span className="truncate font-semibold">{e.nombre}</span>
-                    <span className="flex items-center gap-1.5 text-sm text-marca">
-                      <Upload className="h-4 w-4" aria-hidden /> {t('home.uploadAgain')}
-                    </span>
-                  </Tarjeta>
-                </Link>
-              ))}
-              <div className="divide-y divide-borde rounded-2xl border border-borde bg-panel">
-                {pagos.comprobantes.map((k) => (
-                  <div key={k.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Receipt className="h-4 w-4 shrink-0 text-tenue" aria-hidden />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">{k.cuenta_nombre}</p>
-                        <p className="truncate text-xs text-tenue">
-                          {new Date(k.creado_en).toLocaleDateString(idioma === 'es' ? 'es-US' : 'en-US')} · #{k.confirmacion}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="font-mono text-sm">{formatoDinero(k.monto_cent, idioma)}</span>
-                      <Estado estado={k.estado} />
-                    </div>
-                  </div>
-                ))}
+      {cuentas.length > 0 && (
+        <>
+          <div className="rounded-2xl border border-green-700/50 bg-green-900/20 p-5" data-testid="total-cuentas">
+            <p className="text-xs uppercase tracking-wider text-green-300">{t('home.totalAll')}</p>
+            <p className={`font-mono text-3xl font-bold ${total < 0 ? 'text-red-400' : ''}`}>{total < 0 ? `-${dinero(-total)}` : dinero(total)}</p>
+            <p className="text-xs text-tenue">{t('home.accountsN', { n: cuentas.length })}</p>
+          </div>
+          {pendientes > 0 && conPendientes && (
+            <Link to={`/accounts/${conPendientes.id}/review`} className="mt-3 flex items-center gap-3 rounded-xl border border-amber-700/60 bg-amber-950/30 p-4">
+              <ListChecks className="h-6 w-6 shrink-0 text-amber-300" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-amber-200">{t('home.toReviewN', { n: pendientes })}</p>
+                <p className="text-xs text-tenue">{t('home.toReviewText')}</p>
               </div>
-            </>
+              <ChevronRight className="h-5 w-5 text-amber-300" aria-hidden />
+            </Link>
           )}
-        </div>
+        </>
+      )}
+
+      {(cuentas.length > 0 || !sinCorreo) && <h2 className={titulo}>{t('home.yourAccounts')}</h2>}
+      <div className="space-y-2">
+        {cuentas.map((c) => (
+          <div key={c.id} className="flex items-center gap-2 rounded-xl border border-gray-700 bg-gray-800/70 hover:border-green-600">
+            <Link to={`/accounts/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3 p-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-green-700/50 bg-green-900/40">
+                <Wallet className="h-5 w-5 text-green-400" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">{c.nombre}</span>
+                <span className={`block text-xs ${c.pendientes > 0 ? 'text-amber-300' : 'text-gray-500'}`}>
+                  {c.pendientes > 0 ? t('home.pending', { n: c.pendientes }) : t('home.upToDate')}
+                  {c.rol === 'validador' ? ` · ${t('home.validator')}` : ''}
+                </span>
+              </span>
+              <span className={`font-mono font-semibold ${c.total_cent < 0 ? 'text-red-400' : 'text-green-400'}`}>{dinero(c.total_cent)}</span>
+            </Link>
+            <MenuPuntos
+              opciones={[
+                { texto: c.pendientes > 0 ? `${t('mov.toReview')} (${c.pendientes})` : t('mov.toReview'), icono: <ListChecks className="h-4 w-4" />, onClick: () => navigate(`/accounts/${c.id}/review`) },
+                { texto: t('account.payLink'), icono: <QrCode className="h-4 w-4" />, onClick: () => navigate(`/accounts/${c.id}/link`) },
+                { texto: t('clients.title'), icono: <Users className="h-4 w-4" />, onClick: () => navigate(`/accounts/${c.id}/clients`) },
+                { texto: t('home.openAccount'), icono: <ChevronRight className="h-4 w-4" />, onClick: () => navigate(`/accounts/${c.id}`) },
+              ]}
+            />
+          </div>
+        ))}
+        {cuentas.length === 0 && !sinCorreo && (
+          <Tarjeta className="flex flex-col items-center gap-2 py-6 text-center">
+            <Wallet className="h-10 w-10 text-green-400" aria-hidden />
+            <p className="font-semibold">{t('home.firstAccount')}</p>
+            <p className="text-sm text-tenue">{t('home.firstAccountText')}</p>
+          </Tarjeta>
+        )}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {!sinCorreo && (
+          <Link to="/accounts/new">
+            <Boton className="w-full">
+              <Plus className="h-4 w-4" aria-hidden /> {t('home.newAccount')}
+            </Boton>
+          </Link>
+        )}
+        <Link to="/access" className={sinCorreo ? 'col-span-2' : ''}>
+          <Boton variante="secundario" className="w-full !px-3">
+            <KeyRound className="h-4 w-4" aria-hidden /> {t('home.haveCode')}
+          </Boton>
+        </Link>
+      </div>
+
+      {pagos.empresas.length > 0 && (
+        <>
+          <h2 className={titulo}>{t('home.whoIPay')}</h2>
+          <div className="space-y-2">
+            {pagos.empresas.map((e) => {
+              const ultimo = ultimoPago(e.nombre);
+              return (
+                <div key={e.link_slug} className="flex items-center gap-3 rounded-xl border border-gray-700 bg-gray-800/70 p-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-700/50 bg-blue-900/40">
+                    <Send className="h-5 w-5 text-blue-300" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{e.nombre}</span>
+                    <span className="block text-xs text-tenue">{ultimo ? t('home.lastPayment', { date: fechaLarga(ultimo) }) : t('home.noPaymentsYet')}</span>
+                  </span>
+                  <Link to={`/pay/${e.link_slug}`}>
+                    <Boton className="!px-3 !py-1.5 text-sm">
+                      <Upload className="h-4 w-4" aria-hidden /> {t('home.pay')}
+                    </Boton>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {pagos.comprobantes.length > 0 && (
+        <>
+          <h2 className={titulo}>{t('home.sentPayments')}</h2>
+          <div className="divide-y divide-borde rounded-2xl border border-borde bg-panel">
+            {pagos.comprobantes.map((k) => (
+              <div key={k.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Receipt className="h-4 w-4 shrink-0 text-tenue" aria-hidden />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{k.cuenta_nombre}</p>
+                    <p className="truncate text-xs text-tenue">
+                      {new Date(k.creado_en).toLocaleString(idioma === 'es' ? 'es-US' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                      {k.confirmacion ? ` · ${k.confirmacion}` : ''}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="font-mono text-sm">{dinero(k.monto_cent)}</span>
+                  <Estado estado={k.estado} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </Pagina>
   );
