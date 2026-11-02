@@ -189,3 +189,23 @@ CREATE TABLE IF NOT EXISTS caso_adjuntos (
   creado_en INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS caso_adjuntos_caso ON caso_adjuntos (caso_id);
+
+-- 1 nov 2026: entrar sin correo. El dueño agrega a quien sube capturas o a quien revisa y le
+-- da un código de acceso; la persona lo escribe en la app y entra, sin correo ni contraseña.
+-- Quien paga con el link también puede entrar solo con su nombre.
+ALTER TABLE usuarios ADD COLUMN sin_correo INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS accesos (
+  id TEXT PRIMARY KEY,
+  cuenta_id TEXT NOT NULL,
+  nombre TEXT NOT NULL,
+  rol TEXT NOT NULL CHECK (rol IN ('subidor', 'validador')),
+  usuario_id TEXT,
+  codigo_hash TEXT UNIQUE,
+  codigo_expira_en INTEGER,
+  creado_por TEXT NOT NULL,
+  creado_en INTEGER NOT NULL,
+  anulado_en INTEGER
+);
+CREATE INDEX IF NOT EXISTS accesos_cuenta ON accesos (cuenta_id);
+CREATE INDEX IF NOT EXISTS accesos_usuario ON accesos (usuario_id);
