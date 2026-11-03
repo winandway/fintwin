@@ -4,11 +4,11 @@
 
 ## Tiendas
 
-- [x] **Apple (iPhone) — reenviada el 3 nov 2026** con el video de Richard (grabado en su iPhone: registro,
-  código del correo, cuenta, captura leída, aprobar con PIN y borrar el usuario con DELETE). Video achicado a
-  11 MB y adjuntado a la información para el revisor por API (`scripts/tiendas/adjuntar-video-revision.mjs`);
-  entrega marcada resuelta y reenviada (`enviar-revision-ios.mjs` ya sabe reenviar una rechazada). Estado:
-  WAITING_FOR_REVIEW. Apple responde a go@windoce.com en uno a tres días.
+- [ ] 👤 **Apple (iPhone) — RECHAZADA el 3 nov 2026, 11:58 am, por 4.3 Spam y 4.2.6** (mismo minuto que otras
+  apps de la cuenta: motivo de cuenta). Apple pide NO reenviar y contestar nueve preguntas. Borrador listo en
+  `docs/RESPUESTA-APPLE-4.3.md`; Richard confirma tres datos (clientes en Windoce Hub, lista de apps de la cuenta,
+  si otra app usa el mismo armazón de iPhone) y se envía en «Responder al equipo de revisión de apps». La API
+  pública no deja contestar ese mensaje: se hace con Chrome. Antes (3 nov, 0:42) se había reenviado con el video.
 - [x] **Google Play — aprobada** (Richard lo confirmó el 3 nov 2026).
 - [x] Menú de tres puntos del inicio completo (3 nov 2026): Actualizar, Nueva cuenta, Mi perfil, Ayuda, Docs y Cerrar sesión, también la primera vez. Candado C-MENUS-COMPLETOS-1.
 - [x] **Llave de Gemini** (1 nov 2026): cargada como `GEMINI_API_KEY` en el sitio. Es la llave prepago del
