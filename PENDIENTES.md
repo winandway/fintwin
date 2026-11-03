@@ -10,6 +10,7 @@
   entrega marcada resuelta y reenviada (`enviar-revision-ios.mjs` ya sabe reenviar una rechazada). Estado:
   WAITING_FOR_REVIEW. Apple responde a go@windoce.com en uno a tres días.
 - [x] **Google Play — aprobada** (Richard lo confirmó el 3 nov 2026).
+- [x] Menú de tres puntos del inicio completo (3 nov 2026): Actualizar, Nueva cuenta, Mi perfil, Ayuda, Docs y Cerrar sesión, también la primera vez. Candado C-MENUS-COMPLETOS-1.
 - [x] **Llave de Gemini** (1 nov 2026): cargada como `GEMINI_API_KEY` en el sitio. Es la llave prepago del
   proyecto overbank (torplanet1@gmail.com); datos de recarga en `~/.config/fintwin/proveedores-ia.md`.
   Comprobada con una captura real de Wells Fargo: monto y confirmación leídos bien. La salud dice `lectura_ia: ok`.
