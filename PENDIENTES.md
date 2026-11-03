@@ -12,6 +12,9 @@
   **Orden de Richard (3 nov): nada sale hacia Apple** (ni respuesta, ni reenvío, ni compilación, ni cancelación)
   hasta que apruebe el estudio común de Gerencia. Tutorial para él: `docs/tiendas/TUTORIAL-RECHAZO-APPLE.md`.
   El video que grabó sirve; no hay que rehacerlo.
+  **Plan de Richard (3 nov, vía Gerencia): FinTwin CONGELADA en Apple.** Va primero Divoox, después Bley en la
+  cuenta del cliente; el resto espera. La respuesta de FinTwin NO sale y no se sube nada a Apple hasta que
+  Gerencia avise. Si Apple escribe, se lee y se avisa a Gerencia, sin responder.
 - [x] **Google Play — aprobada** (Richard lo confirmó el 3 nov 2026).
 - [x] Menú de tres puntos del inicio completo (3 nov 2026): Actualizar, Nueva cuenta, Mi perfil, Ayuda, Docs y Cerrar sesión, también la primera vez. Candado C-MENUS-COMPLETOS-1.
 - [x] **Llave de Gemini** (1 nov 2026): cargada como `GEMINI_API_KEY` en el sitio. Es la llave prepago del
