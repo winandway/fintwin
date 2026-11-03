@@ -9,6 +9,9 @@
   `docs/RESPUESTA-APPLE-4.3.md`; Richard confirma tres datos (clientes en Windoce Hub, lista de apps de la cuenta,
   si otra app usa el mismo armazón de iPhone) y se envía en «Responder al equipo de revisión de apps». La API
   pública no deja contestar ese mensaje: se hace con Chrome. Antes (3 nov, 0:42) se había reenviado con el video.
+  **Orden de Richard (3 nov): nada sale hacia Apple** (ni respuesta, ni reenvío, ni compilación, ni cancelación)
+  hasta que apruebe el estudio común de Gerencia. Tutorial para él: `docs/tiendas/TUTORIAL-RECHAZO-APPLE.md`.
+  El video que grabó sirve; no hay que rehacerlo.
 - [x] **Google Play — aprobada** (Richard lo confirmó el 3 nov 2026).
 - [x] Menú de tres puntos del inicio completo (3 nov 2026): Actualizar, Nueva cuenta, Mi perfil, Ayuda, Docs y Cerrar sesión, también la primera vez. Candado C-MENUS-COMPLETOS-1.
 - [x] **Llave de Gemini** (1 nov 2026): cargada como `GEMINI_API_KEY` en el sitio. Es la llave prepago del
