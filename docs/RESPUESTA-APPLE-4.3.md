@@ -25,11 +25,15 @@ FinTwin es producto propio de Windoce LLC, hecho por nosotros, sin plantilla. Va
 - **Nada inventado.** Ni cifras de usuarios, ni probadores que no existieron.
 - **No se reenvía la versión.** Apple lo dice claro: reenviar sin cambios = otro rechazo y más problemas.
 
-## Lo que Richard confirma antes de enviar (marcado ⚠️ en el texto)
+## Ajustada a la línea común de la cuenta (3 nov 2026)
 
-1. Que clientes reales de Windoce usaron FinTwin dentro de Windoce Hub antes de esta app (y desde cuándo).
-2. La lista de apps de la cuenta, con una línea de qué hace cada una (pregunta 5).
-3. Si alguna otra app de la cuenta reutiliza el mismo armazón de iPhone que FinTwin (pregunta 7).
+Preguntas 5 a 9 con el texto común de Gerencia (documento APPLE-4.3-LINEA-COMUN). Con eso ya no hace falta la
+lista de apps ni lo del armazón de iPhone. La 4 dice el número real de compilaciones de TestFlight: UNA
+(1.0, compilación 3, del 31 oct). Solo se citan cambios que salieron de las pruebas de Richard y del equipo
+(no «Aceptar igual», que vino del FinTwin original). Que clientes de windoce.com usaron FinTwin dentro de
+Windoce Hub consta en el CLAUDE.md del proyecto; no se da ninguna cifra.
+
+Falta solo el «sí» de Richard en esta sesión para mandarla.
 
 ## Texto para enviar (en inglés, en «Responder al equipo de revisión de apps»)
 
@@ -55,27 +59,26 @@ Owners and staff of small and medium businesses that are paid by bank transfer i
 Receipt-scanning apps (expense apps) are built for receipts that YOU paid, not for proofs of payment that YOUR CUSTOMERS send you. Accounting and bank-reconciliation apps depend on bank feeds, which many small businesses do not have for P2P transfers, and they reconcile days later, after the goods were already delivered. Messaging apps are where the screenshots arrive today, with no structure at all. FinTwin is built around the moment the customer says "I already paid": a customer-facing upload link, a mandatory confirmation number, duplicate detection across all of the business's accounts before the payment is counted, and team approval with a personal PIN. We are not aware of an app on the App Store that combines these for incoming transfer receipts.
 
 4. Beta testing and feedback applied
-⚠️ FinTwin first ran for our own business clients as a module of Windoce Hub, our web platform at windoce.com, and was then rebuilt as a standalone product. The Android version is live on Google Play. On iOS we tested with an internal TestFlight group on physical iPhones. Examples of feedback that changed the production build:
-- A receipt legitimately split between two accounts was blocked as a duplicate. We added "Accept anyway", which shows the full usage history and requires the validator's PIN, while a receipt can still never enter the same account twice.
+FinTwin first ran for our own business clients as a module of Windoce Hub, our web platform at windoce.com, and was then rebuilt as a standalone product. The Android version is approved and live on Google Play. On iOS we uploaded one TestFlight build (1.0, build 3) and tested it on physical iPhones with our internal TestFlight group. The app's screens and logic are served by our own backend, so fixes from testing reached testers and this same build without a new binary. Examples of feedback that changed what reviewers and customers see:
 - "Delete my user" was too close to "Sign out" and could be tapped by mistake. It now lives in My profile, inside the more-options menu, and requires the password and typing a confirmation word.
 - The date field on the payment page overflowed the screen on iPhone; it was fixed.
 - Staff found email links hard to use on the phone; email is now confirmed with a 6-digit code inside the app, and the owner can add uploaders and validators with an access code instead of an email.
-- Testers asked for all shortcuts (new account, profile, help, guides) to be reachable from the home screen menu, including the very first time, before any account exists; this was added.
+- Testers asked for every shortcut (new account, profile, help, guides) to be reachable from the home screen menu, including the very first time, before any account exists; this was added.
 
 5. Standalone product or suite
-FinTwin is a standalone product. ⚠️ Windoce LLC is a software development company that publishes several products, each for a different market and purpose. FinTwin is the only app on our account that records incoming payment receipts; none of our other apps reads payment screenshots, detects reused receipts or offers PIN-based approval of income.
+FinTwin is a standalone product with its own brand, domain, account system and backend. Windoce LLC is a software company that also publishes other, unrelated products under its developer account. FinTwin shares no accounts, features or data with them.
 
 6. Could it be an in-app purchase or feature of another app on the account?
-No. None of our other apps is used by the same people for the same job, so adding receipt records to them would make no sense to their users. FinTwin's users are a business's owner and staff, who need a dedicated tool their whole team can install and that customers can reach through a payment link.
+No. No other app on our account records incoming payment receipts, reads payment screenshots, detects reused receipts or offers PIN-based approval of income, so FinTwin's job does not belong inside any of them; its users are a business's owner and staff, who need a dedicated tool their whole team can install and that their customers can reach through a payment link.
 
 7. Shared code, frameworks or assets with other apps on the account
-⚠️ FinTwin has its own codebase, its own server, its own database and its own brand. It uses only standard third-party frameworks (Expo, React Native, react-native-webview, expo-notifications for push notifications). Our team uses the same standard tools across our apps, but FinTwin's screens, server logic, AI receipt reading, duplicate detection, approval workflow and data are exclusive to FinTwin.
+No significant shared code, frameworks or assets beyond standard third-party frameworks (Expo and React Native, react-native-webview, expo-notifications, and open-source libraries). FinTwin's app, backend, AI receipt reading, duplicate detection, design and brand assets live in their own repository.
 
 8. Shared codebase, SDK or content library with a third-party app
-No. Beyond the standard frameworks listed above, the only external service is the Google Gemini API, which we call to read the text of each receipt image. All of the app's logic and content are our own.
+No. FinTwin is not built on a white-label product, template or app generation service. The only external service is the Google Gemini API, which we call to read the text of each receipt image.
 
 9. Created for a client, partner or third party?
-No. FinTwin is Windoce LLC's own product, with our own concept, content and branding. It was designed and built in-house by our team; it was not created from a commercial template or an app generation service, and it is not published on behalf of anyone else. Windoce LLC is the provider of the app's content.
+No. FinTwin is owned and operated by Windoce LLC, the account holder. The concept, brand, content and service are ours, and we run the backend and support customers ourselves.
 
 The screen recording attached to the App Review Information shows the full flow on a physical iPhone. If anything else would help, we are happy to provide it.
 
