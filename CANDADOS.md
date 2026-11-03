@@ -29,3 +29,15 @@ Variables del sitio para soporte: `GERENTE_SECRETO` (copia en `~/.config/gerente
 `ARCHIVOS_FIRMA` (copia en `~/.config/fintwin/archivos-firma`). El canario `/datos/salud` dice `soporte: ok` cuando están las dos.
 
 Antes de un rollback o una actualización grande de paquetes: `npm run verify` en verde.
+
+## C-MENUS-COMPLETOS-1 — el menú de tres puntos del inicio lleva todo (3 nov 2026)
+
+- **Qué pasaba:** Richard grabó el video de Apple y vio que el menú de tres puntos del inicio solo tenía «Actualizar
+  totales» y «Cerrar sesión», y en la primera pantalla (sin cuentas) no había menú. Comparado con la web, «le faltaban
+  botones».
+- **Qué se hizo:** el menú del inicio es uno solo (`menu` en `src/app/pages/Home.tsx`) y sale con y sin cuentas:
+  Actualizar totales, Nueva cuenta (no a quien entró con código), Mi perfil, Ayuda y soporte, Docs y, separado por una
+  línea, Cerrar sesión. El menú del nombre suma Docs. El menú ≡ de la cuenta suma «Gastos de la comisión» (dueño).
+  `MenuPuntos` acepta `separado` para la línea.
+- **No tocar:** borrar el usuario sigue FUERA de estos menús (C-BORRAR-LEJOS-1).
+- **Cómo se comprueba:** `test/app/menus.test.tsx` (se puso en rojo quitando «Mi perfil»).

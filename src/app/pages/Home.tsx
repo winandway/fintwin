@@ -1,4 +1,4 @@
-import { Building2, ChevronRight, KeyRound, ListChecks, LogOut, Plus, QrCode, Receipt, RefreshCw, Send, Upload, Users, Wallet } from 'lucide-react';
+import { BookOpen, Building2, ChevronRight, KeyRound, LifeBuoy, ListChecks, LogOut, Plus, QrCode, Receipt, RefreshCw, Send, Upload, UserRound, Users, Wallet } from 'lucide-react';
 import { MenuPuntos } from '../components/MenuPuntos';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -46,12 +46,29 @@ export function Home() {
   const sinCorreo = Boolean(usuario?.sin_correo);
   const primerNombre = usuario?.nombre.split(' ')[0] ?? '';
   const dinero = (c: number) => formatoDinero(c, idioma);
+  // El menú de tres puntos del inicio, igual de completo con o sin cuentas (candado C-MENUS-COMPLETOS-1).
+  // Cerrar sesión va al final y separado; borrar el usuario NO va aquí (vive en «Mi perfil»).
+  const menu = (
+    <MenuPuntos
+      opciones={[
+        { texto: t('home.refresh'), icono: <RefreshCw className="h-4 w-4" />, onClick: cargar },
+        ...(sinCorreo ? [] : [{ texto: t('home.newAccount'), icono: <Plus className="h-4 w-4" />, onClick: () => navigate('/accounts/new') }]),
+        { texto: t('nav.profile'), icono: <UserRound className="h-4 w-4" />, onClick: () => navigate('/profile') },
+        { texto: t('nav.help'), icono: <LifeBuoy className="h-4 w-4" />, onClick: () => navigate('/help') },
+        { texto: t('nav.guides'), icono: <BookOpen className="h-4 w-4" />, onClick: () => navigate(idioma === 'es' ? '/es/docs' : '/docs') },
+        { texto: t('nav.signOut'), icono: <LogOut className="h-4 w-4" />, onClick: () => void salir(), separado: true },
+      ]}
+    />
+  );
 
   // Primera vez: sin negocios ni pagos. Dos caminos claros.
   if (cuentas.length === 0 && pagos.empresas.length === 0 && pagos.comprobantes.length === 0) {
     return (
       <Pagina angosta>
-        <h1 className="mb-4 text-2xl font-bold">{t('home.hi', { name: primerNombre })}</h1>
+        <div className="mb-4 flex items-start justify-between gap-2">
+          <h1 className="text-2xl font-bold">{t('home.hi', { name: primerNombre })}</h1>
+          {menu}
+        </div>
         <p className="mb-3 text-tenue">{t('home.welcome')}</p>
         <div className="space-y-3">
           {!sinCorreo && (
@@ -93,12 +110,7 @@ export function Home() {
           <p className="text-sm text-tenue">{t('home.hello')}</p>
           <h1 className="truncate text-xl font-bold">{primerNombre}</h1>
         </div>
-        <MenuPuntos
-          opciones={[
-            { texto: t('home.refresh'), icono: <RefreshCw className="h-4 w-4" />, onClick: cargar },
-            { texto: t('nav.signOut'), icono: <LogOut className="h-4 w-4" />, onClick: () => void salir() },
-          ]}
-        />
+        {menu}
       </div>
 
       {cuentas.length > 0 && (

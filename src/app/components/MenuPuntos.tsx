@@ -7,6 +7,8 @@ export interface Opcion {
   icono: ReactNode;
   onClick: () => void;
   peligro?: boolean;
+  /** Pone una línea fina encima, para apartar «Cerrar sesión» del resto. */
+  separado?: boolean;
 }
 
 /** Menú de tres puntos: lo destructivo vive aquí, nunca suelto a la vista. */
@@ -37,7 +39,8 @@ export function MenuPuntos({ opciones }: { opciones: Opcion[] }) {
       </button>
       {abierto && (
         <div role="menu" className="absolute right-0 top-full z-40 mt-1 w-60 rounded-xl border border-borde bg-panel p-1.5 shadow-xl">
-          {opciones.map((o) => (
+          {opciones.map((o) => [
+            o.separado && <div key={`${o.texto}-linea`} className="my-1 border-t border-borde" />,
             <button
               key={o.texto}
               role="menuitem"
@@ -49,8 +52,8 @@ export function MenuPuntos({ opciones }: { opciones: Opcion[] }) {
             >
               {o.icono}
               {o.texto}
-            </button>
-          ))}
+            </button>,
+          ])}
         </div>
       )}
     </div>

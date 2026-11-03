@@ -1,4 +1,4 @@
-import { ChevronDown, LifeBuoy, LogOut, UserRound } from 'lucide-react';
+import { BookOpen, ChevronDown, LifeBuoy, LogOut, UserRound } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../lib/i18n';
@@ -7,7 +7,7 @@ import { SelectorIdioma } from './SelectorIdioma';
 
 function MenuCuenta() {
   const { usuario, salir } = useSesion();
-  const { t } = useI18n();
+  const { t, idioma } = useI18n();
   const [abierto, setAbierto] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -44,6 +44,13 @@ function MenuCuenta() {
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm hover:bg-white/5"
           >
             <UserRound className="h-4 w-4" aria-hidden /> {t('nav.profile')}
+          </Link>
+          <Link
+            to={idioma === 'es' ? '/es/docs' : '/docs'}
+            onClick={() => setAbierto(false)}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm hover:bg-white/5"
+          >
+            <BookOpen className="h-4 w-4" aria-hidden /> {t('nav.guides')}
           </Link>
           <div className="my-1 border-t border-borde" />
           <button onClick={() => void salir()} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-white/5">

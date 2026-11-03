@@ -25,6 +25,7 @@ import {
   X,
   XCircle,
   AlertTriangle,
+  Percent,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -177,6 +178,7 @@ export function Account() {
             { texto: `${t('mov.toReview')} (${datos.pendientes})`, icono: <ListChecks className="h-4 w-4" />, onClick: () => navigate(`/accounts/${id}/review`) },
             { texto: t('clients.title'), icono: <Users className="h-4 w-4" />, onClick: () => navigate(`/accounts/${id}/clients`) },
             { texto: t('mov.export'), icono: <Download className="h-4 w-4" />, onClick: exportar },
+            ...(esDueno ? [{ texto: t('expense.title'), icono: <Percent className="h-4 w-4" />, onClick: () => navigate(`/accounts/${id}/commission`) }] : []),
             { texto: t('account.payLink'), icono: <QrCode className="h-4 w-4" />, onClick: () => navigate(`/accounts/${id}/link`) },
             ...(esDueno ? [{ texto: t('account.addPeople'), icono: <UserPlus className="h-4 w-4" />, onClick: () => navigate(`/accounts/${id}/team`) }] : []),
             { texto: t('account.myPin'), icono: <KeyRound className="h-4 w-4" />, onClick: () => setDialogo('pin') },
