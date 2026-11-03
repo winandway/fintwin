@@ -1,26 +1,19 @@
 # Pendientes de FinTwin
 
-> Al día el 1 de noviembre de 2026. Se ejecuta en orden; lo marcado 👤 depende de Richard.
+> Al día el 3 de noviembre de 2026. Se ejecuta en orden; lo marcado 👤 depende de Richard.
 
 ## Tiendas
 
-- [ ] 👤 **Apple (iPhone) — video para la revisión.** Apple rechazó la versión 1.0 por la guía 2.1
-  («falta información»): pide un video grabado en un iPhone físico. Las notas con todo lo demás ya están
-  cargadas. Guion: `docs/videos/revision-apple/GUION-VIDEO-APPLE.md`. Richard graba y pasa el video por
-  AirDrop a la Mac (queda en Descargas).
-- [ ] **Apple — reenviar.** Con el video: App Store Connect (Chrome de Richard) → Revisión de apps → la
-  entrega rechazada → «Responder al equipo de revisión de apps», adjuntar el video y decir que las notas
-  traen lo demás. Después `node scripts/tiendas/enviar-revision-ios.mjs` (no hace falta compilación
-  nueva: la 3 ya está VALID). Receta completa: `docs/PUBLICAR-EN-APPLE.md`.
-- [ ] **Google Play — versión 1.1.0** en revisión desde el 29 de octubre. Sale sola al aprobarse. Detalle:
-  `docs/LISTO-PARA-GOOGLE.md`.
-
-## Producto
-
+- [x] **Apple (iPhone) — reenviada el 3 nov 2026** con el video de Richard (grabado en su iPhone: registro,
+  código del correo, cuenta, captura leída, aprobar con PIN y borrar el usuario con DELETE). Video achicado a
+  11 MB y adjuntado a la información para el revisor por API (`scripts/tiendas/adjuntar-video-revision.mjs`);
+  entrega marcada resuelta y reenviada (`enviar-revision-ios.mjs` ya sabe reenviar una rechazada). Estado:
+  WAITING_FOR_REVIEW. Apple responde a go@windoce.com en uno a tres días.
+- [x] **Google Play — aprobada** (Richard lo confirmó el 3 nov 2026).
 - [x] **Llave de Gemini** (1 nov 2026): cargada como `GEMINI_API_KEY` en el sitio. Es la llave prepago del
   proyecto overbank (torplanet1@gmail.com); datos de recarga en `~/.config/fintwin/proveedores-ia.md`.
   Comprobada con una captura real de Wells Fargo: monto y confirmación leídos bien. La salud dice `lectura_ia: ok`.
-- [ ] 👤 **Richard crea su propia cuenta en FinTwin** para comprobar que llegan los correos.
+- [x] Richard creó su propia cuenta, le llegó el correo con el código, subió una captura y borró la cuenta (3 nov 2026).
 - [x] Entrada simple (1 nov 2026): el correo se confirma con un código de 6 números dentro de la app; el dueño
   agrega a quien sube o revisa con un código de acceso (sin correo); el link de pago pide solo el nombre. Guía en
   Docs «Agrega a tu equipo con un código de acceso». El guion del video de Apple quedó con este flujo.

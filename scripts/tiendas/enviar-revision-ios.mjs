@@ -8,6 +8,28 @@ const APP = '6829195734';
 
 const [version] = (await asc('GET', `/v1/apps/${APP}/appStoreVersions?filter[platform]=IOS`)).data;
 const estado = version.attributes.appStoreState;
+
+// Rechazada (3 nov 2026): la entrega queda en UNRESOLVED_ISSUES. Se marca resuelta y se reenvía la misma.
+if (estado === 'REJECTED') {
+  const [rechazada] = (
+    await asc('GET', `/v1/reviewSubmissions?filter[app]=${APP}&filter[platform]=IOS&filter[state]=UNRESOLVED_ISSUES`)
+  ).data;
+  if (!rechazada) {
+    console.log('La versión está rechazada pero no hay entrega con asuntos pendientes.');
+    process.exit(4);
+  }
+  for (const item of (await asc('GET', `/v1/reviewSubmissions/${rechazada.id}/items`)).data)
+    await asc('PATCH', `/v1/reviewSubmissionItems/${item.id}`, {
+      data: { type: 'reviewSubmissionItems', id: item.id, attributes: { resolved: true } },
+    });
+  await asc('PATCH', `/v1/reviewSubmissions/${rechazada.id}`, {
+    data: { type: 'reviewSubmissions', id: rechazada.id, attributes: { submitted: true } },
+  });
+  const ahora = (await asc('GET', `/v1/appStoreVersions/${version.id}`)).data.attributes.appStoreState;
+  console.log(`Reenviada a revisión de Apple (versión ${version.attributes.versionString}). Estado: ${ahora}.`);
+  process.exit(0);
+}
+
 if (estado !== 'PREPARE_FOR_SUBMISSION') {
   console.log(`La versión ya está en «${estado}», no se envía otra vez.`);
   process.exit(0);

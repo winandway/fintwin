@@ -90,3 +90,14 @@ la respuesta es reforzar esas funciones, no discutir.
 ## Estado
 
 - 31 de octubre de 2026: versión 1.0 (compilación 3) enviada a revisión, en `WAITING_FOR_REVIEW`.
+
+## Si Apple rechaza y pide un video (hecho el 3 nov 2026, sin Chrome)
+
+1. Richard graba en su iPhone con el guion de `docs/videos/revision-apple/GUION-VIDEO-APPLE.md` y lo pasa por AirDrop.
+2. Se achica (el del iPhone pesa cientos de MB):
+   `ffmpeg -i video.MP4 -vf scale=720:-2 -c:v libx264 -crf 25 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart FinTwin-review-iphone.mp4`
+3. `node scripts/tiendas/adjuntar-video-revision.mjs FinTwin-review-iphone.mp4` → queda como adjunto de la
+   información para el revisor (el revisor lo ve junto a las notas).
+4. Se ajusta la línea SCREEN RECORDING de las notas en `ficha-app-store.mjs` y se corre.
+5. `node scripts/tiendas/enviar-revision-ios.mjs` → con la versión en REJECTED marca resuelta la entrega con
+   asuntos pendientes y la reenvía. Tiene que terminar en WAITING_FOR_REVIEW.
