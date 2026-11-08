@@ -4,10 +4,12 @@ import { Link, useParams } from 'react-router-dom';
 import { formatoDinero } from '../../shared/reglas';
 import { CampoClave } from '../components/CampoClave';
 import { fechaCorta } from '../components/Comprobantes';
-import { Aviso, Boton, Cargando, Modal, Pagina, Tarjeta } from '../components/ui';
+import { Aviso, AvisoBorrador, Boton, Cargando, Modal, Pagina, Tarjeta } from '../components/ui';
+import { useBorrador } from '../lib/borrador';
 import { Visor } from '../components/Visor';
 import { api, type Comprobante, type CuentaDetalle } from '../lib/api';
 import { useI18n, useMensajeError } from '../lib/i18n';
+import { useSesion } from '../lib/sesion';
 
 /**
  * La bandeja «Por revisar» del original: los pendientes y en espera de una cuenta, con su miniatura,
@@ -192,8 +194,11 @@ function DialogoLote({
 }) {
   const { t, idioma } = useI18n();
   const msg = useMensajeError();
+  const { usuario } = useSesion();
   const [pin, setPin] = useState('');
-  const [motivo, setMotivo] = useState('');
+  // El motivo del rechazo se guarda mientras se escribe (el PIN nunca).
+  const b = useBorrador(`rechazo-${cuentaId}`, usuario?.id ?? 'anonimo', { motivo: '' });
+  const motivo = b.valores.motivo;
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   async function enviar(e: FormEvent) {
@@ -201,7 +206,14 @@ function DialogoLote({
     setEnviando(true);
     setError('');
     try {
-      onListo(await api.post(`/cuentas/${cuentaId}/revisar`, { ids, accion, pin, motivo: motivo.trim() || undefined }));
+      const r = await api.post<{ hechos: string[]; ya_revisados: number }>(`/cuentas/${cuentaId}/revisar`, {
+        ids,
+        accion,
+        pin,
+        motivo: accion === 'rechazar' ? motivo.trim() || undefined : undefined,
+      });
+      if (accion === 'rechazar') b.limpiar();
+      onListo(r);
     } catch (err) {
       setError(msg(err));
       setPin('');
@@ -215,6 +227,7 @@ function DialogoLote({
         <p className="text-sm text-tenue">
           {accion === 'aprobar' ? t('review.approveText', { amount: formatoDinero(total, idioma), name: cuentaNombre }) : t('review.rejectText')}
         </p>
+        {accion === 'rechazar' && <AvisoBorrador visible={b.recuperado} onEmpezar={b.limpiar} />}
         {accion === 'rechazar' && (
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-white">{t('review.reason')}</span>
@@ -222,7 +235,7 @@ function DialogoLote({
               rows={2}
               maxLength={200}
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => b.set('motivo', e.target.value)}
               className="w-full rounded-xl border border-borde bg-[#0d1528] px-4 py-3 text-white outline-none focus:border-marca"
             />
           </label>
@@ -230,7 +243,15 @@ function DialogoLote({
         <CampoClave pin autoFocus etiqueta={t('pin.title')} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
         {error && <Aviso tipo="error">{error}</Aviso>}
         <div className="flex gap-2">
-          <Boton type="button" variante="secundario" className="flex-1" onClick={onCerrar}>
+          <Boton
+            type="button"
+            variante="secundario"
+            className="flex-1"
+            onClick={() => {
+              if (accion === 'rechazar') b.limpiar();
+              onCerrar();
+            }}
+          >
             {t('common.cancel')}
           </Boton>
           <Boton type="submit" variante={accion === 'rechazar' ? 'peligro' : 'primario'} cargando={enviando} disabled={pin.length !== 4} className="flex-1">

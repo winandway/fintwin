@@ -680,8 +680,11 @@ function DialogoMovimiento({
 }) {
   const { t, idioma } = useI18n();
   const msg = useMensajeError();
+  const { usuario } = useSesion();
   const [pin, setPin] = useState('');
-  const [nota, setNota] = useState('');
+  // La nota de «en espera» se guarda mientras se escribe (el PIN nunca).
+  const b = useBorrador(`espera-${mov.id}`, usuario?.id ?? 'anonimo', { nota: '' });
+  const nota = b.valores.nota;
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   async function enviar(e: FormEvent) {
@@ -694,6 +697,7 @@ function DialogoMovimiento({
         onListo(t('mov.approvedOne'));
       } else if (tipo === 'espera') {
         await api.post(`/cuentas/${cuentaId}/comprobantes/${mov.id}/espera`, { pin, nota: nota.trim() || undefined });
+        b.limpiar();
         onListo(t('mov.heldOne'));
       } else {
         await api.post(`/cuentas/${cuentaId}/comprobantes/${mov.id}/cancelar`);
@@ -715,13 +719,26 @@ function DialogoMovimiento({
         ) : (
           <>
             <p className="text-sm text-tenue">{tipo === 'aprobar' ? t('mov.approveText') : t('mov.holdText')}</p>
-            {tipo === 'espera' && <Campo etiqueta={t('mov.holdNote')} maxLength={200} value={nota} onChange={(e) => setNota(e.target.value)} />}
+            {tipo === 'espera' && (
+              <>
+                <AvisoBorrador visible={b.recuperado} onEmpezar={b.limpiar} />
+                <Campo etiqueta={t('mov.holdNote')} maxLength={200} value={nota} onChange={(e) => b.set('nota', e.target.value)} />
+              </>
+            )}
             <CampoClave pin autoFocus etiqueta={t('pin.title')} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
           </>
         )}
         {error && <Aviso tipo="error">{error}</Aviso>}
         <div className="flex gap-2">
-          <Boton type="button" variante="secundario" className="flex-1" onClick={onCerrar}>
+          <Boton
+            type="button"
+            variante="secundario"
+            className="flex-1"
+            onClick={() => {
+              if (tipo === 'espera') b.limpiar();
+              onCerrar();
+            }}
+          >
             {tipo === 'cancelar' ? t('mov.goBack') : t('common.cancel')}
           </Boton>
           <Boton

@@ -57,3 +57,30 @@ Antes de un rollback o una actualización grande de paquetes: `npm run verify` e
   `e2e/vivo.spec.ts` en el Action, que abre /login y /signup en vivo y exige el recuadro de Cloudflare.
 - **No tocar:** el CSP de `withSecurityHeaders` permite `challenges.cloudflare.com` en script y frame: si se quita,
   el recuadro desaparece y nadie puede entrar. Guía pública: /docs/sign-in-security-check.
+
+## C-BLINDAJE-1 — las 6 capas de la regla global, revisadas el 8 nov 2026
+
+| Capa | Estado | Dónde |
+|---|---|---|
+| 1. Tipos y estilo | ✅ TypeScript estricto (strict, noUncheckedIndexedAccess, noImplicitOverride), ESLint con plugin de seguridad, Prettier | `tsconfig*.json`, `eslint.config.js` |
+| 2. Pruebas | ✅ Vitest + Testing Library; **msw** en las pruebas de pantallas con `onUnhandledFrame: 'error'` (agregado hoy); el servidor simula toda la red y falla ante una llamada no simulada; **Playwright** de punta a punta en vivo (agregado hoy); umbrales de cobertura fijados en el piso actual (88 % de líneas) y **90 %** en auth, crypto, accesos, movimientos, pagar, capturas y borradores | `test/`, `e2e/`, `vitest.config.ts` |
+| 3. Dependencias y secretos | ✅ `npm audit` alto en verify; gitleaks en pre-commit, en CI y ahora también en `npm run verify` (si está instalado); Dependabot semanal; `.env*` ignorado con `.env.example` | `package.json`, `.github/` |
+| 4. Seguridad en el aire | ✅ zod en todas las entradas; variables del sitio revisadas con zod en el canario (hoy); cabeceras CSP, HSTS, nosniff, X-Frame, Referrer y Permissions; límite de intentos; Turnstile encendido | `env-check.ts`, `http.ts`, `limites.ts` |
+| 5. Compuertas | ✅ husky pre-commit (gitleaks + lint + pruebas) y pre-push (`npm run verify`); el Action corre lo mismo | `.husky/`, `.github/workflows/publicar.yml` |
+| 6. Producción | ✅ humo en vivo tras publicar (salud con versión, rutas en 200) + Playwright en vivo | Action, trabajo «humo» |
+
+Deuda anotada, sin tocar para no romper: el formateo automático de lo tocado (lint-staged + Prettier) no se enciende porque
+el código viejo no está formateado con Prettier y reformatearlo entero está prohibido; sesión (`sesion.tsx`, 56 %),
+cuentas (85 %) y gastos (89 %) todavía no llegan al 90 % y quedan en su piso. FinTwin no tiene sitio de pruebas aparte
+(staging): publica directo, con verify + humo + Playwright como compuerta.
+
+## C-BORRADOR-DUENO-1 — el borrador no se pisa cuando la sesión carga tarde (8 nov 2026)
+
+- **Qué pasaba:** `useBorrador` arma la llave con el id del usuario. Si el formulario se abría antes de que cargara la
+  sesión (llave «anonimo») y luego llegaba el usuario, se guardaba vacío encima de su borrador y se perdía.
+- **Qué se hizo:** al cambiar de dueño se trae el borrador del dueño nuevo, y lo ya escrito en pantalla manda.
+  También guardan borrador ahora la nota de «En espera» de un movimiento y el motivo de rechazo en la revisión por lote
+  (el PIN nunca). El aviso «Recuperamos lo que estabas escribiendo» va fuera de la etiqueta del campo.
+- **Cómo se comprueba:** `test/app/borradores-dialogos.test.tsx` (rojo comprobado quitando el arreglo) y
+  `test/app/blindaje.test.tsx` (ningún campo de contraseña fuera de `CampoClave`, rojo comprobado).
+- Formularios SIN borrador a propósito: códigos de un solo uso, PIN, contraseña nueva y la palabra BORRAR.

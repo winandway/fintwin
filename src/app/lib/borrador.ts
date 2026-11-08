@@ -46,6 +46,19 @@ export function useBorrador<T extends Record<string, string>>(
   const inicialRef = useRef(inicial);
   const sensiblesRef = useRef(sensibles);
 
+  // Si el dueño cambia después de abrir el formulario (la sesión terminó de cargar), se trae el borrador
+  // del dueño nuevo en vez de pisarlo con vacío; lo que ya se escribió en pantalla manda.
+  const [llaveCargada, setLlaveCargada] = useState(llave);
+  if (llaveCargada !== llave) {
+    setLlaveCargada(llave);
+    const g = leer<Partial<T>>(llave) ?? {};
+    const escrito = Object.fromEntries(
+      Object.entries(valores).filter(([k, v]) => v !== inicial[k as keyof T]),
+    ) as Partial<T>;
+    setValores({ ...inicial, ...g, ...escrito });
+    setRecuperado(Object.values(g).some((v) => v));
+  }
+
   useEffect(() => {
     const t = setTimeout(() => {
       const guardar: Partial<T> = {};
