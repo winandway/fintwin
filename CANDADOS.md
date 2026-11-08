@@ -84,3 +84,16 @@ cuentas (85 %) y gastos (89 %) todavía no llegan al 90 % y quedan en su piso. F
 - **Cómo se comprueba:** `test/app/borradores-dialogos.test.tsx` (rojo comprobado quitando el arreglo) y
   `test/app/blindaje.test.tsx` (ningún campo de contraseña fuera de `CampoClave`, rojo comprobado).
 - Formularios SIN borrador a propósito: códigos de un solo uso, PIN, contraseña nueva y la palabra BORRAR.
+
+## C-GOOGLE-PLAY-1 — botón oficial de Google Play en la portada y el pie (8 nov 2026)
+
+- **Qué es:** FinTwin ya es pública en Google Play (paquete `com.windoce.ingresos`). La web muestra el distintivo
+  oficial «Get it on Google Play» / «Disponible en Google Play» en la portada (debajo de los botones de entrar) y
+  en el pie de todas las páginas, con la línea legal de marca de Google LLC.
+- **Cómo se hizo:** componente `src/app/components/GooglePlay.tsx`. Las imágenes son las oficiales de Google
+  (`play.google.com/intl/en_us/badges/static/images/badges/{en,es}_badge_web_generic.png`), solo recortadas al
+  borde negro, sin recolorear ni deformar: `public/google-play-en.png` y `public/google-play-es.png`. El enlace
+  lleva `&hl=en|es` según el idioma. Dentro de la app del celular (`esApp()`) no se muestra, ni la línea legal.
+- **Cómo se comprueba:** `test/app/google-play.test.tsx` (rojo comprobado cambiando el paquete) y la prueba en
+  vivo de `e2e/vivo.spec.ts`.
+- **Qué NO tocar:** no cambiar el diseño del distintivo ni bajarlo de 40 px de alto (normas de marca de Google).

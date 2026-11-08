@@ -1,3 +1,4 @@
+import { BotonGooglePlay } from '../components/GooglePlay';
 import { AlertTriangle, Building2, CheckCircle2, ImagePlus, KeyRound, Loader2, ReceiptText, ShieldCheck, Users } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -34,6 +35,10 @@ export function Landing() {
               <KeyRound className="h-4 w-4" aria-hidden /> {t('landing.code')}
             </Boton>
           </Link>
+        </div>
+        <div className="mt-6">
+          <p className="mb-2 text-sm text-tenue">{t('play.android')}</p>
+          <BotonGooglePlay alto={52} />
         </div>
       </section>
       <section className="grid gap-3 sm:grid-cols-3">

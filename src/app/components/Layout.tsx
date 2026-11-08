@@ -2,7 +2,9 @@ import { BookOpen, ChevronDown, LifeBuoy, LogOut, UserRound } from 'lucide-react
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../lib/i18n';
+import { esApp } from '../lib/nativo';
 import { useSesion } from '../lib/sesion';
+import { BotonGooglePlay } from './GooglePlay';
 import { SelectorIdioma } from './SelectorIdioma';
 
 function MenuCuenta() {
@@ -87,6 +89,9 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
       <div className="flex-1">{children}</div>
       <footer className="border-t border-borde px-4 py-6 text-center text-xs text-tenue">
+        <div className="mb-4">
+          <BotonGooglePlay alto={40} />
+        </div>
         <p className="mb-2 space-x-4">
           <a href="https://windoce.com/privacy/" target="_blank" rel="noopener noreferrer" className="hover:text-white">
             {t('footer.privacy')}
@@ -104,6 +109,7 @@ export function Layout({ children }: { children: ReactNode }) {
             Windoce LLC
           </a>
         </p>
+        {!esApp() && <p className="mt-2 text-[11px] opacity-70">{t('play.legal')}</p>}
       </footer>
     </div>
   );

@@ -31,3 +31,12 @@ test('la guía del escudo se ve en español', async ({ page }) => {
   await page.goto('/es/docs/sign-in-security-check');
   await expect(page.getByRole('heading', { name: 'La verificación de seguridad al entrar' })).toBeVisible();
 });
+
+// C-GOOGLE-PLAY-1: el distintivo oficial se ve en la portada y lleva a la ficha de Play.
+test('el botón de Google Play aparece en la portada y lleva a la ficha', async ({ page, request }) => {
+  await page.goto('/');
+  const boton = page.getByTestId('google-play').first();
+  await expect(boton).toBeVisible();
+  expect(await boton.getAttribute('href')).toContain('play.google.com/store/apps/details?id=com.windoce.ingresos');
+  for (const l of ['en', 'es']) expect((await request.get(`/google-play-${l}.png`)).status()).toBe(200);
+});
