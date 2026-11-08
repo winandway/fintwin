@@ -20,7 +20,21 @@
     <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Lo que ve Google y quien entra sin JavaScript; React lo reemplaza al cargar (candado C-GOOGLE-PLAY-1). -->
+      <main class="mx-auto max-w-3xl px-4 py-8 text-center">
+        <img src="/icon.png" alt="FinTwin" width="80" height="80" class="mx-auto mb-5 h-20 w-20 rounded-2xl" />
+        <h1 class="text-3xl font-bold">FinTwin — Your income receipts, in order.</h1>
+        <p class="mx-auto mt-3 max-w-md">Receipts and income records for your business, read by AI and kept free of duplicates.</p>
+        <p class="mt-6"><a href="/signup">Create free account</a> · <a href="/login">Sign in</a></p>
+        <p class="mt-6">
+          <a href="https://play.google.com/store/apps/details?id=com.windoce.ingresos&amp;hl=en" target="_blank" rel="noopener noreferrer"><img src="/google-play-en.png" alt="Get it on Google Play" height="48" style="height:48px;width:auto;display:inline-block" /></a>
+          <a href="https://play.google.com/store/apps/details?id=com.windoce.ingresos&amp;hl=es" target="_blank" rel="noopener noreferrer" lang="es"><img src="/google-play-es.png" alt="Disponible en Google Play" height="48" style="height:48px;width:auto;display:inline-block" /></a>
+        </p>
+        <p class="mt-8 text-xs">© 2026 fintwin.windoce.com | All rights reserved. Developed by <a href="https://windoce.com" target="_blank" rel="noopener noreferrer">Windoce LLC</a></p>
+        <p class="mt-2 text-xs">Google Play and the Google Play logo are trademarks of Google LLC.</p>
+      </main>
+    </div>
     <script type="module" src="/src/app/main.tsx"></script>
   </body>
 </html>

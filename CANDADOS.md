@@ -97,3 +97,7 @@ cuentas (85 %) y gastos (89 %) todavía no llegan al 90 % y quedan en su piso. F
 - **Cómo se comprueba:** `test/app/google-play.test.tsx` (rojo comprobado cambiando el paquete) y la prueba en
   vivo de `e2e/vivo.spec.ts`.
 - **Qué NO tocar:** no cambiar el diseño del distintivo ni bajarlo de 40 px de alto (normas de marca de Google).
+- **También en el HTML del servidor (8 nov 2026):** la web se pinta en el navegador, así que el HTML que bajaban
+  Google y quien entra sin JavaScript no traía el enlace. Ahora `index.html` lleva dentro de `#root` una portada
+  mínima con los dos distintivos y el enlace a la ficha; React la reemplaza al cargar. Prueba: `index.html` debe
+  contener la ficha (vitest) y el HTML en vivo de `/` también (e2e).

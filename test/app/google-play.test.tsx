@@ -41,3 +41,12 @@ describe('botón de Google Play', () => {
     }
   });
 });
+
+describe('enlace a Google Play en el HTML del servidor', () => {
+  it('index.html lleva la ficha de Play sin necesitar JavaScript', () => {
+    const html = readFileSync('index.html', 'utf8');
+    expect(html).toContain('https://play.google.com/store/apps/details?id=com.windoce.ingresos');
+    expect(html).toContain('Get it on Google Play');
+    expect(html).toContain('Disponible en Google Play');
+  });
+});

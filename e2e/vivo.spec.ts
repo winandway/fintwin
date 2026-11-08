@@ -38,5 +38,7 @@ test('el botón de Google Play aparece en la portada y lleva a la ficha', async 
   const boton = page.getByTestId('google-play').first();
   await expect(boton).toBeVisible();
   expect(await boton.getAttribute('href')).toContain('play.google.com/store/apps/details?id=com.windoce.ingresos');
+  const html = await (await request.get('/')).text();
+  expect(html).toContain('play.google.com/store/apps/details?id=com.windoce.ingresos');
   for (const l of ['en', 'es']) expect((await request.get(`/google-play-${l}.png`)).status()).toBe(200);
 });
