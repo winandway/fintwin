@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 // Humo en vivo: las rutas principales responden 200 y el escudo anti-robots aparece en la entrada.
-const RUTAS = ['/', '/login', '/signup', '/forgot', '/docs', '/es/docs', '/docs/sign-in-security-check', '/es/docs/sign-in-security-check'];
+const RUTAS = ['/', '/login', '/signup', '/forgot', '/docs', '/es/docs', '/docs/sign-in-security-check', '/es/docs/sign-in-security-check', '/docs/seguridad-entrar-en.png', '/docs/seguridad-registro-es.png'];
 
 for (const ruta of RUTAS) {
   test(`responde 200: ${ruta}`, async ({ request }) => {
