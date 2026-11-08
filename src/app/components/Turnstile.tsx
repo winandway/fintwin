@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 
 declare global {
   interface Window {
     turnstile?: {
-      render: (el: HTMLElement, opts: { sitekey: string; callback: (t: string) => void; 'expired-callback': () => void; theme: string }) => string;
+      render: (
+        el: HTMLElement,
+        opts: { sitekey: string; callback: (t: string) => void; 'expired-callback': () => void; theme: string; language: string },
+      ) => string;
       reset: (id?: string) => void;
+      remove: (id: string) => void;
     };
   }
 }
@@ -22,23 +27,34 @@ function siteKey(): Promise<string | null> {
 export function Turnstile({ onToken }: { onToken: (t: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [key, setKey] = useState<string | null>(null);
+  // El recuadro habla el idioma elegido en FinTwin, no el del navegador; al cambiarlo se vuelve a pintar.
+  const { idioma } = useI18n();
   useEffect(() => {
     void siteKey().then(setKey);
   }, []);
   useEffect(() => {
     if (!key || !ref.current) return;
     const el = ref.current;
-    const pintar = () => window.turnstile?.render(el, { sitekey: key, callback: onToken, 'expired-callback': () => onToken(''), theme: 'dark' });
-    if (window.turnstile) {
-      pintar();
-      return;
+    let id: string | undefined;
+    let vivo = true;
+    const pintar = () => {
+      if (!vivo || !window.turnstile) return;
+      id = window.turnstile.render(el, { sitekey: key, callback: onToken, 'expired-callback': () => onToken(''), theme: 'dark', language: idioma });
+    };
+    if (window.turnstile) pintar();
+    else {
+      const s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      s.async = true;
+      s.onload = pintar;
+      document.head.appendChild(s);
     }
-    const s = document.createElement('script');
-    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-    s.async = true;
-    s.onload = pintar;
-    document.head.appendChild(s);
-  }, [key, onToken]);
+    return () => {
+      vivo = false;
+      if (id) window.turnstile?.remove(id);
+      onToken('');
+    };
+  }, [key, onToken, idioma]);
   if (!key) return null;
   return <div ref={ref} className="min-h-[65px]" />;
 }
