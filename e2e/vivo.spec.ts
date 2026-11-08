@@ -20,7 +20,10 @@ test('el canario dice que el escudo y las variables están bien', async ({ reque
 for (const ruta of ['/login', '/signup']) {
   test(`el escudo de Cloudflare aparece en ${ruta}`, async ({ page }) => {
     await page.goto(ruta);
-    await expect(page.locator('iframe[src*="challenges.cloudflare.com"]')).toHaveCount(1, { timeout: 20_000 });
+    // El recuadro va dentro de una capa cerrada: se busca entre los marcos de la página, no en el HTML.
+    await expect
+      .poll(() => page.frames().filter((f) => f.url().includes('challenges.cloudflare.com')).length, { timeout: 30_000 })
+      .toBeGreaterThan(0);
   });
 }
 
