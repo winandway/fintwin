@@ -41,3 +41,19 @@ Antes de un rollback o una actualización grande de paquetes: `npm run verify` e
   `MenuPuntos` acepta `separado` para la línea.
 - **No tocar:** borrar el usuario sigue FUERA de estos menús (C-BORRAR-LEJOS-1).
 - **Cómo se comprueba:** `test/app/menus.test.tsx` (se puso en rojo quitando «Mi perfil»).
+
+## C-TURNSTILE-1 — escudo anti-robots en entrar, registrarse y recuperar la clave (8 nov 2026)
+
+- **Qué faltaba:** el código del escudo existía, pero estaba apagado porque no había claves.
+- **Qué se hizo:** widget `fintwin-turnstile` (modo administrado, hosts fintwin.windoce.com y fintwin.sitios.dev)
+  creado en la cuenta de Cloudflare de Windoce con el token que tiene permiso Turnstile
+  (`~/.config/nube-privada/cloudflare-turnstile-token`). Claves en `~/.config/fintwin/turnstile-sitio` y
+  `turnstile-secreta` (600, nunca al repo), cargadas en el sitio como `TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY`
+  (secreto) con la llave de IA. El servidor comprueba el pase ANTES de mirar la contraseña (`verificarTurnstile` en
+  `auth.ts`); sin claves se apaga; si Cloudflare no responde, deja pasar y lo deja en el log.
+- **Canario:** `/datos/salud` → `turnstile: ok` y `variables: ok` (zod en `env-check.ts`; una sola clave cargada da
+  `error` y nombra la variable, nunca el valor).
+- **Cómo se comprueba:** `test/worker/turnstile.test.ts` (rojo comprobado quitando la verificación) y
+  `e2e/vivo.spec.ts` en el Action, que abre /login y /signup en vivo y exige el recuadro de Cloudflare.
+- **No tocar:** el CSP de `withSecurityHeaders` permite `challenges.cloudflare.com` en script y frame: si se quita,
+  el recuadro desaparece y nadie puede entrar. Guía pública: /docs/sign-in-security-check.

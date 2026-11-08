@@ -51,6 +51,10 @@ export function crearMundo(extra: Partial<Env> = {}) {
         avisos.push(...lista);
         return new Response(JSON.stringify({ data: lista.map(() => ({ status: 'ok' })) }));
       }
+      if (u.includes('challenges.cloudflare.com/turnstile')) {
+        const datos = new URLSearchParams(String(init?.body));
+        return new Response(JSON.stringify({ success: datos.get('response') === 'pase-bueno' }));
+      }
       if (u.includes('generativelanguage.googleapis.com')) {
         llamadasIA++;
         return new Response(
@@ -91,7 +95,7 @@ export function crearMundo(extra: Partial<Env> = {}) {
 
   /** Crea un usuario confirmado y devuelve su cookie de sesión. */
   async function usuario(email: string, nombre = 'Persona') {
-    await call('POST', '/datos/auth/registro', { body: { nombre, email, clave: 'clave-segura-1' } });
+    await call('POST', '/datos/auth/registro', { body: { nombre, email, clave: 'clave-segura-1', turnstile: 'pase-bueno' } });
     const r = await call('POST', '/datos/auth/confirmar', { body: { token: tokenDe(correos.at(-1)) } });
     return r.cookie!;
   }

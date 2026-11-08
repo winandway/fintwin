@@ -12,3 +12,5 @@ android/local.properties
 android/*.aab
 android/*.apk
 android/*.idsig
+test-results/
+playwright-report/

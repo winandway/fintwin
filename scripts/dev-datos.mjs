@@ -27,6 +27,9 @@ const env = {
   GERENTE_SECRETO: 'gerente-local',
   // La lectura con IA en local usa la llave guardada en la máquina (nunca en el repo), si existe.
   GEMINI_API_KEY: process.env.GEMINI_API_KEY ?? llaveLocal(),
+  // Escudo anti-robots en local: solo si se pasan las claves de prueba de Cloudflare por variable.
+  TURNSTILE_SITE_KEY: process.env.TURNSTILE_SITE_KEY,
+  TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
 };
 
 function llaveLocal() {

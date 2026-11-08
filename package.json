@@ -11,6 +11,7 @@
     "test": "vitest run --coverage",
     "audit": "npm audit --audit-level=high --omit=dev",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run audit",
+    "e2e": "playwright test",
     "dev:datos": "node scripts/dev-datos.mjs",
     "dev:todo": "node scripts/dev-datos.mjs & vite --port 5175 --strictPort",
     "prepare": "husky"
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261028.1",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

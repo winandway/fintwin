@@ -205,6 +205,73 @@ export const GUIAS: Guia[] = [
       ],
     },
   },
+  {
+    slug: 'sign-in-security-check',
+    seccion: 'soporte',
+    titulo: { en: 'The security check when you sign in', es: 'La verificación de seguridad al entrar' },
+    resumen: {
+      en: 'Why FinTwin shows a small security check when you sign in or create an account, and what to do if it does not pass.',
+      es: 'Por qué FinTwin muestra una pequeña verificación de seguridad al entrar o crear tu cuenta, y qué hacer si no pasa.',
+    },
+    cuerpo: {
+      en: [
+        { tipo: 'p', texto: 'FinTwin keeps a record of your income, so we protect the door. When you sign in, create an account or ask to reset your password, a small security check confirms that a real person is on the other side and not a robot trying thousands of passwords.' },
+        { tipo: 'h2', texto: 'What you will see' },
+        { tipo: 'pasos', items: [
+          'Open the sign-in or create account screen.',
+          'Below the form you will see a small box from Cloudflare, the security company that protects FinTwin.',
+          'Most of the time it checks you on its own in a second and shows “Success!”. You don’t have to pick pictures or type letters.',
+          'Once it shows the check mark, type your email and password and tap the button as usual.',
+        ] },
+        { tipo: 'imagen', src: '/docs/seguridad-entrar-en.png', alt: 'The FinTwin sign-in screen with the security check below the form' },
+        { tipo: 'nota', texto: 'Sometimes, if something looks unusual, the box asks you to tick a checkbox. Just tap it and continue.' },
+        { tipo: 'h2', texto: 'Why it matters to you' },
+        { tipo: 'lista', items: [
+          'It stops robots that try to guess passwords, so nobody gets into your account by brute force.',
+          'It stops fake accounts from being created with your email.',
+          'It protects the password reset, so nobody can flood your inbox with reset emails.',
+        ] },
+        { tipo: 'h2', texto: 'If the check does not pass' },
+        { tipo: 'p', texto: 'If you see the message “Complete the security check and try again”, wait for the box to show its check mark and tap the button again. If the box does not appear at all:' },
+        { tipo: 'lista', items: [
+          'Reload the page.',
+          'Check your internet connection.',
+          'Turn off ad blockers or privacy extensions for FinTwin, because some of them hide the box.',
+          'Try another browser, or the FinTwin app on your phone.',
+        ] },
+        { tipo: 'imagen', src: '/docs/seguridad-registro-en.png', alt: 'The FinTwin create account screen with the security check' },
+        { tipo: 'p', texto: 'If it still fails, write to soporte+fintwin@windoce.com and tell us which browser or phone you use. Never send us your password: our team will never ask for it.' },
+      ],
+      es: [
+        { tipo: 'p', texto: 'FinTwin guarda el registro de tus ingresos, por eso cuidamos la puerta. Cuando entras, creas una cuenta o pides recuperar tu contraseña, una pequeña verificación de seguridad confirma que del otro lado hay una persona y no un robot probando miles de contraseñas.' },
+        { tipo: 'h2', texto: 'Qué vas a ver' },
+        { tipo: 'pasos', items: [
+          'Abre la pantalla de entrar o la de crear cuenta.',
+          'Debajo del formulario verás un recuadro pequeño de Cloudflare, la empresa de seguridad que protege a FinTwin.',
+          'Casi siempre te verifica solo en un segundo y muestra «¡Listo!». No tienes que elegir fotos ni escribir letras.',
+          'Cuando aparezca la marca de verificación, escribe tu correo y tu contraseña y toca el botón como siempre.',
+        ] },
+        { tipo: 'imagen', src: '/docs/seguridad-entrar-es.png', alt: 'La pantalla de entrar de FinTwin con la verificación de seguridad debajo del formulario' },
+        { tipo: 'nota', texto: 'A veces, si algo se ve raro, el recuadro te pide marcar una casilla. Solo tócala y sigue.' },
+        { tipo: 'h2', texto: 'Por qué te conviene' },
+        { tipo: 'lista', items: [
+          'Frena a los robots que intentan adivinar contraseñas, así nadie entra a tu cuenta a la fuerza.',
+          'Evita que creen cuentas falsas con tu correo.',
+          'Protege la recuperación de contraseña, para que nadie te llene el correo de mensajes.',
+        ] },
+        { tipo: 'h2', texto: 'Si la verificación no pasa' },
+        { tipo: 'p', texto: 'Si ves el mensaje «Completa la verificación de seguridad e inténtalo otra vez», espera a que el recuadro muestre su marca y toca el botón de nuevo. Si el recuadro no aparece:' },
+        { tipo: 'lista', items: [
+          'Vuelve a cargar la página.',
+          'Revisa tu conexión a internet.',
+          'Apaga los bloqueadores de anuncios o extensiones de privacidad para FinTwin, porque algunos esconden el recuadro.',
+          'Prueba con otro navegador, o con la app de FinTwin en tu celular.',
+        ] },
+        { tipo: 'imagen', src: '/docs/seguridad-registro-es.png', alt: 'La pantalla de crear cuenta de FinTwin con la verificación de seguridad' },
+        { tipo: 'p', texto: 'Si sigue fallando, escríbenos a soporte+fintwin@windoce.com y cuéntanos qué navegador o celular usas. Nunca nos mandes tu contraseña: nuestro equipo jamás te la va a pedir.' },
+      ],
+    },
+  },
 ];
 
 function sinAcentos(s: string): string {

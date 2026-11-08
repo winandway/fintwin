@@ -83,3 +83,11 @@ jobs:
             echo "$ruta → $code"
             test "$code" = "200"
           done
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Pruebas de punta a punta en vivo (rutas en 200, escudo anti-robots, Docs)
+        run: npx playwright install --with-deps chromium && npm run e2e

@@ -28,7 +28,7 @@
 - [x] **Igual al FinTwin original** (1 nov 2026): pantalla de la cuenta, repetidas con historial y «Aceptar igual»,
   puntos de colores, en espera, cancelar, bandeja «Por revisar», «Clientes que te pagan», exportar, comisión por
   día y por mes, link de pago con lectura al elegir la foto. Comparación completa en `docs/IGUAL-AL-ORIGINAL.md`.
-- [ ] Turnstile apagado (faltan las claves), guía pública en Docs.
+- [x] Turnstile encendido (8 nov 2026) en entrar, registro y recuperar clave; guía pública en Docs (C-TURNSTILE-1).
 
 ## Cuenta del revisor (Apple y Google)
 
