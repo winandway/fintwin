@@ -5,7 +5,7 @@ import { leerImagen, textoCorto } from './archivos';
 import { avisarCapturaNueva } from './avisos';
 import { buscarRepetida, columnasLectura, historialDeUso, lecturaDe, SQL_COLUMNAS_LECTURA } from './capturas';
 import { newId } from './crypto';
-import { exigirRol, membresia, verificarPin } from './cuentas';
+import { exigirRol, membresia, verificarClaveValidar } from './cuentas';
 import { HttpError, json, readJson, type Ctx } from './http';
 import { racionar } from './limites';
 import { LECTURA_VACIA } from './ocr';
@@ -151,7 +151,7 @@ export async function registrarEnCuenta(ctx: Ctx): Promise<Response> {
     if (form.get('aceptar_repetida') !== '1') {
       throw new HttpError(409, 'captura_repetida', { historial: await historialDeUso(ctx.env, archivo.hash, confirmacion, u.id) });
     }
-    await verificarPin(ctx.env, u, m, String(form.get('pin') ?? ''), ctx.now);
+    await verificarClaveValidar(ctx.env, u, m, String(form.get('pin') ?? ''), ctx.now);
   }
 
   const id = newId();
@@ -204,7 +204,7 @@ export async function ponerEnEspera(ctx: Ctx): Promise<Response> {
   exigirRol(m, 'dueno', 'validador');
   const datos = z.object({ pin: z.string(), nota: z.string().max(200).optional() }).safeParse(await readJson(ctx.req));
   if (!datos.success) throw new HttpError(400, 'datos_invalidos');
-  await verificarPin(ctx.env, u, m, datos.data.pin, ctx.now);
+  await verificarClaveValidar(ctx.env, u, m, datos.data.pin, ctx.now);
   const k = await movimientoDe(ctx, m.cuenta_id);
   const nota = datos.data.nota?.trim();
   const r = await ctx.env.DB.prepare(

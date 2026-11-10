@@ -62,6 +62,7 @@ export interface Resumen {
 export interface CuentaDetalle {
   cuenta: { id: string; nombre: string; comision_pct: number; link_slug: string; exigir_confirmacion: boolean; creado_en: number };
   rol: 'dueno' | 'validador';
+  clave_unica?: { activa: boolean; por_mi: boolean; nombre: string | null; en: number | null };
   resumen: Resumen;
   mes: Resumen & { mes: string };
 }

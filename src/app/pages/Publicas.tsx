@@ -1,4 +1,5 @@
 import { BotonGooglePlay } from '../components/GooglePlay';
+import { HistorialPagos } from '../components/HistorialPagos';
 import { AlertTriangle, Building2, CheckCircle2, ImagePlus, KeyRound, Loader2, ReceiptText, ShieldCheck, Users } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -148,6 +149,7 @@ export function Pay() {
             </Boton>
           </div>
         </Tarjeta>
+        <HistorialPagos slug={slug} />
       </Pagina>
     );
   }
@@ -306,6 +308,7 @@ export function Pay() {
         </Boton>
         <p className="text-center text-xs text-tenue">{t('pay.footer')}</p>
       </form>
+      <HistorialPagos slug={slug} />
     </Pagina>
   );
 }

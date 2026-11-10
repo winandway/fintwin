@@ -8,6 +8,7 @@ import { Aviso, AvisoBorrador, Boton, Cargando, Modal, Pagina, Tarjeta } from '.
 import { useBorrador } from '../lib/borrador';
 import { Visor } from '../components/Visor';
 import { api, type Comprobante, type CuentaDetalle } from '../lib/api';
+import { recordarClaveUnica, useEtiquetaValidar } from '../lib/claveUnica';
 import { useI18n, useMensajeError } from '../lib/i18n';
 import { useSesion } from '../lib/sesion';
 
@@ -35,7 +36,7 @@ export function Review() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
   useEffect(() => {
-    api.get<CuentaDetalle>(`/cuentas/${id}`).then((d) => setNombre(d.cuenta.nombre)).catch(() => undefined);
+    api.get<CuentaDetalle>(`/cuentas/${id}`).then((d) => { setNombre(d.cuenta.nombre); recordarClaveUnica(d.cuenta.id, d.clave_unica?.activa); }).catch(() => undefined);
     cargar();
   }, [id, cargar]);
 
@@ -192,6 +193,7 @@ function DialogoLote({
   onCerrar: () => void;
   onListo: (r: { hechos: string[]; ya_revisados: number }) => void;
 }) {
+  const etiquetaValidar = useEtiquetaValidar(cuentaId);
   const { t, idioma } = useI18n();
   const msg = useMensajeError();
   const { usuario } = useSesion();
@@ -240,7 +242,7 @@ function DialogoLote({
             />
           </label>
         )}
-        <CampoClave pin autoFocus etiqueta={t('pin.title')} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+        <CampoClave pin autoFocus etiqueta={etiquetaValidar} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
         {error && <Aviso tipo="error">{error}</Aviso>}
         <div className="flex gap-2">
           <Boton
@@ -285,7 +287,7 @@ export function Clients() {
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
   useEffect(() => {
-    api.get<CuentaDetalle>(`/cuentas/${id}`).then((d) => setNombre(d.cuenta.nombre)).catch(() => undefined);
+    api.get<CuentaDetalle>(`/cuentas/${id}`).then((d) => { setNombre(d.cuenta.nombre); recordarClaveUnica(d.cuenta.id, d.clave_unica?.activa); }).catch(() => undefined);
     api
       .get<{ clientes: Cliente[] }>(`/cuentas/${id}/clientes`)
       .then((r) => setLista(r.clientes))

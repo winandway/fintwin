@@ -101,3 +101,35 @@ cuentas (85 %) y gastos (89 %) todavía no llegan al 90 % y quedan en su piso. F
   Google y quien entra sin JavaScript no traía el enlace. Ahora `index.html` lleva dentro de `#root` una portada
   mínima con los dos distintivos y el enlace a la ficha; React la reemplaza al cargar. Prueba: `index.html` debe
   contener la ficha (vitest) y el HTML en vivo de `/` también (e2e).
+
+## C-HISTORIAL-PAGADOR-1 — quien paga ve sus capturas y su estado (10 nov 2026)
+
+- **Qué es:** en el link de pago (`/pay/:slug`), debajo del formulario y en la pantalla de «Captura enviada»,
+  sale «Tus capturas enviadas aquí»: en proceso (barra gris que se mueve), procesado (verde, tipo de pago e ID del
+  pago = número de confirmación) o no aprobado (rojo, con el motivo). Se vuelve a mirar cada 30 s mientras haya
+  alguna en proceso (solo lectura; no escribe nada en la base).
+- **Cómo se hizo:** `GET /datos/mis-pagos` devuelve además `link_slug`, `plataforma`, `revisado_en` y `motivo`
+  (el motivo SOLO si está rechazado). Componente `src/app/components/HistorialPagos.tsx`, filtra por el slug.
+  Animación `enproceso` en `src/app/index.css`.
+- **Cómo se comprueba:** `test/worker/clave-unica.test.ts` (bloque «historial de quien paga», rojo comprobado
+  quitando `link_slug`) y `test/app/historial-pagos.test.tsx`.
+- **Qué NO tocar:** lo aprobado va en verde y lo rechazado en rojo (regla global). No mostrar notas internas del
+  equipo a quien paga: solo el motivo de rechazo.
+
+## C-CLAVE-UNICA-1 — una sola clave para validar (10 nov 2026)
+
+- **Por qué:** quien crea la cuenta en FinTwin muchas veces no es el dueño de la cuenta del banco (p. ej. el
+  negocio en Venezuela y la cuenta que recibe en EE. UU.). Con el PIN de cada uno, el creador podía aprobar
+  capturas sin que el dueño del banco viera si el dinero llegó.
+- **Cómo funciona:** columnas `cuentas.clave_validar_hash/por/en`. `POST /datos/cuentas/:id/clave-unica`:
+  crear (si no existe) con el PIN personal, o cambiar (solo `clave_validar_por`, con la clave actual). La creación
+  es condicional (`WHERE clave_validar_hash IS NULL`): si dos la crean a la vez, gana la primera.
+  `verificarClaveValidar` (en `cuentas.ts`) se usa en revisar (aprobar/rechazar), poner en espera y «Aceptar
+  igual» una repetida: con clave única activa, el PIN personal NO sirve. Límite: 5 fallos / 15 min.
+  El dueño no puede quitar a quien la tiene (`tiene_la_clave_unica`, en equipo y en accesos). Si esa persona
+  sale sola, la clave se borra y se vuelve al PIN de cada uno. La pantalla usa `useEtiquetaValidar` para pedir
+  «la clave única» en vez de «tu PIN». `verCuenta` devuelve `clave_unica` sin la clave.
+- **Cómo se comprueba:** `test/worker/clave-unica.test.ts` (rojo comprobado haciendo que valide con el PIN
+  personal). Guía pública `/docs/validation-key`.
+- **Qué NO tocar:** nunca devolver el hash ni permitir a otra persona cambiarla o borrarla. Si se pierde, se
+  atiende por soporte.

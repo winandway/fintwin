@@ -19,6 +19,9 @@ interface Membresia {
   link_slug: string;
   exigir_confirmacion: number;
   creado_en: number;
+  clave_validar_hash: string | null;
+  clave_validar_por: string | null;
+  clave_validar_en: number | null;
 }
 
 const pinSchema = z.string().regex(PIN_RE);
@@ -31,7 +34,8 @@ function parse<T>(schema: z.ZodType<T>, data: unknown): T {
 
 export async function membresia(env: Env, cuentaId: string, usuarioId: string): Promise<Membresia> {
   const m = await env.DB.prepare(
-    `SELECT m.cuenta_id, m.rol, m.pin_hash, c.nombre, c.comision_pct, c.link_slug, c.exigir_confirmacion, c.creado_en FROM miembros m
+    `SELECT m.cuenta_id, m.rol, m.pin_hash, c.nombre, c.comision_pct, c.link_slug, c.exigir_confirmacion, c.creado_en,
+       c.clave_validar_hash, c.clave_validar_por, c.clave_validar_en FROM miembros m
      JOIN cuentas c ON c.id = m.cuenta_id
      WHERE m.cuenta_id = ? AND m.usuario_id = ? AND c.archivada_en IS NULL`,
   )
@@ -54,6 +58,58 @@ export async function verificarPin(env: Env, u: Usuario, m: Membresia, pin: stri
     throw new HttpError(401, 'pin_incorrecto', { quedan });
   }
   await limpiarIntentos(env, clave);
+}
+
+/**
+ * Para VALIDAR (aprobar, rechazar, poner en espera, aceptar una repetida). Si la cuenta tiene
+ * clave única, se pide esa y no el PIN personal: así el que creó la cuenta no puede validar si
+ * la clave la puso otra persona. Mismo límite: 5 fallos en 15 minutos. Candado C-CLAVE-UNICA-1.
+ */
+export async function verificarClaveValidar(env: Env, u: Usuario, m: Membresia, pin: string, now: number): Promise<void> {
+  if (!m.clave_validar_hash) return verificarPin(env, u, m, pin, now);
+  const clave = `pinv:${u.id}:${m.cuenta_id}`;
+  await exigirNoBloqueado(env, clave, now);
+  if (!PIN_RE.test(pin) || !(await verifySecret(pin, m.clave_validar_hash))) {
+    const quedan = await sumarIntento(env, clave, now, 5, 15, 15);
+    throw new HttpError(401, 'clave_unica_incorrecta', { quedan });
+  }
+  await limpiarIntentos(env, clave);
+}
+
+/** Lo que la pantalla necesita saber de la clave única (nunca la clave). */
+export async function estadoClaveUnica(env: Env, m: Membresia, yo: string) {
+  if (!m.clave_validar_por) return { activa: false, por_mi: false, nombre: null, en: null };
+  const quien = await env.DB.prepare('SELECT nombre FROM usuarios WHERE id = ?').bind(m.clave_validar_por).first<{ nombre: string }>();
+  return { activa: true, por_mi: m.clave_validar_por === yo, nombre: quien?.nombre ?? null, en: m.clave_validar_en };
+}
+
+/**
+ * Crear la clave única (si nadie la ha creado) con el PIN personal, o cambiarla (solo quien la
+ * creó, con la clave actual). Una vez creada, nadie más puede cambiarla ni verla.
+ */
+export async function claveUnica(ctx: Ctx): Promise<Response> {
+  const u = await exigirUsuario(ctx);
+  const m = await membresia(ctx.env, ctx.params.id ?? '', u.id);
+  exigirRol(m, 'dueno', 'validador');
+  const datos = parse(z.object({ pin: z.string().optional(), actual: z.string().optional(), nueva: pinSchema }), await readJson(ctx.req));
+  const hash = await hashSecret(datos.nueva);
+  if (!m.clave_validar_hash) {
+    await verificarPin(ctx.env, u, m, datos.pin ?? '', ctx.now);
+    // Si dos personas la crean a la vez, gana la primera.
+    const r = await ctx.env.DB.prepare(
+      'UPDATE cuentas SET clave_validar_hash = ?, clave_validar_por = ?, clave_validar_en = ? WHERE id = ? AND clave_validar_hash IS NULL RETURNING id',
+    )
+      .bind(hash, u.id, ctx.now, m.cuenta_id)
+      .all();
+    if (!r.results.length) throw new HttpError(409, 'clave_unica_de_otro');
+    return json({ ok: true, creada: true });
+  }
+  if (m.clave_validar_por !== u.id) throw new HttpError(403, 'clave_unica_de_otro');
+  await verificarClaveValidar(ctx.env, u, m, datos.actual ?? '', ctx.now);
+  await ctx.env.DB.prepare('UPDATE cuentas SET clave_validar_hash = ?, clave_validar_en = ? WHERE id = ? AND clave_validar_por = ?')
+    .bind(hash, ctx.now, m.cuenta_id, u.id)
+    .run();
+  return json({ ok: true, creada: false });
 }
 
 interface Resumen {
@@ -151,6 +207,7 @@ export async function verCuenta(ctx: Ctx): Promise<Response> {
       creado_en: m.creado_en,
     },
     rol: m.rol,
+    clave_unica: await estadoClaveUnica(ctx.env, m, u.id),
     resumen: {
       ...general,
       total_cent: general.ingresos_cent - general.comision_cent - general.salidas_cent,
@@ -206,7 +263,7 @@ export async function revisar(ctx: Ctx): Promise<Response> {
     }),
     await readJson(ctx.req),
   );
-  await verificarPin(ctx.env, u, m, datos.pin, ctx.now);
+  await verificarClaveValidar(ctx.env, u, m, datos.pin, ctx.now);
   const estado = datos.accion === 'aprobar' ? 'aprobado' : 'rechazado';
   const pct = datos.accion === 'aprobar' ? m.comision_pct : 0;
   const db = ctx.env.DB;
@@ -375,6 +432,7 @@ export async function quitarMiembro(ctx: Ctx): Promise<Response> {
   exigirRol(m, 'dueno');
   const datos = parse(z.object({ usuario_id: z.string(), pin: z.string() }), await readJson(ctx.req));
   if (datos.usuario_id === u.id) throw new HttpError(400, 'no_puedes_quitarte');
+  if (datos.usuario_id === m.clave_validar_por) throw new HttpError(400, 'tiene_la_clave_unica');
   await verificarPin(ctx.env, u, m, datos.pin, ctx.now);
   await ctx.env.DB.prepare("DELETE FROM miembros WHERE cuenta_id = ? AND usuario_id = ? AND rol <> 'dueno'")
     .bind(m.cuenta_id, datos.usuario_id)
@@ -386,7 +444,14 @@ export async function salirDelEquipo(ctx: Ctx): Promise<Response> {
   const u = await exigirUsuario(ctx);
   const m = await membresia(ctx.env, ctx.params.id ?? '', u.id);
   if (m.rol === 'dueno') throw new HttpError(400, 'dueno_no_sale');
-  await ctx.env.DB.prepare('DELETE FROM miembros WHERE cuenta_id = ? AND usuario_id = ?').bind(m.cuenta_id, u.id).run();
+  const db = ctx.env.DB;
+  await db.batch([
+    db.prepare('DELETE FROM miembros WHERE cuenta_id = ? AND usuario_id = ?').bind(m.cuenta_id, u.id),
+    // Si se va quien tenía la clave única, la clave se va con esa persona: se vuelve al PIN de cada uno.
+    db
+      .prepare('UPDATE cuentas SET clave_validar_hash = NULL, clave_validar_por = NULL, clave_validar_en = NULL WHERE id = ? AND clave_validar_por = ?')
+      .bind(m.cuenta_id, u.id),
+  ]);
   return json({ ok: true });
 }
 

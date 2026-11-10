@@ -43,3 +43,12 @@ input[type='date'] {
 input[type='date']::-webkit-date-and-time-value {
   text-align: left;
 }
+
+/* Barra «En proceso» del historial de quien paga: se mueve de lado a lado mientras espera. */
+@keyframes enproceso {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*='animate-[enproceso'] { animation: none; }
+}

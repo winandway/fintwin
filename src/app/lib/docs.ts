@@ -272,6 +272,104 @@ export const GUIAS: Guia[] = [
       ],
     },
   },
+  {
+    slug: 'payment-status',
+    seccion: 'empezar',
+    titulo: { en: 'See the status of the payments you sent', es: 'Mira el estado de los pagos que enviaste' },
+    resumen: {
+      en: 'When you pay with a business link, FinTwin keeps a list of every receipt you sent there: in process, processed or not approved, with the payment type and its ID.',
+      es: 'Cuando pagas con el link de una empresa, FinTwin guarda la lista de cada captura que enviaste ahí: en proceso, procesada o no aprobada, con el tipo de pago y su ID.',
+    },
+    cuerpo: {
+      en: [
+        { tipo: 'p', texto: 'After you upload a receipt with a payment link, you no longer have to wonder whether the business saw it. Open the same link again and, below the form, you will find “Your receipts sent here” with every payment you sent to that business.' },
+        { tipo: 'h2', texto: 'The three states' },
+        { tipo: 'lista', items: [
+          'In process: the business has your receipt and is checking that the money arrived. A gray bar moves while it waits.',
+          'Your payment was processed: the business confirmed it. It turns green and shows the payment type (for example Zelle) and the payment ID, which is the confirmation number of your receipt.',
+          'Your payment was not approved: the business could not confirm it. It shows in red with the reason they wrote, so you know what to fix.',
+        ] },
+        { tipo: 'imagen', src: '/docs/historial-pagos-en.png', alt: 'The payment link with the list of receipts sent: one in process and one processed in green' },
+        { tipo: 'h2', texto: 'Good to know' },
+        { tipo: 'lista', items: [
+          'The list updates by itself every 30 seconds while a payment is in process. You can also reload the page.',
+          'You only see your own receipts, and only the ones you sent to that business.',
+          'All your payments to every business are also in “My payments” on your home screen.',
+        ] },
+        { tipo: 'nota', texto: 'FinTwin does not move money. It keeps the record of the receipts so you and the business see the same thing.' },
+      ],
+      es: [
+        { tipo: 'p', texto: 'Después de subir una captura con un link de pago, ya no tienes que preguntarte si la empresa la vio. Abre el mismo link otra vez y, debajo del formulario, vas a encontrar «Tus capturas enviadas aquí» con cada pago que le enviaste a esa empresa.' },
+        { tipo: 'h2', texto: 'Los tres estados' },
+        { tipo: 'lista', items: [
+          'En proceso: la empresa tiene tu captura y está revisando que el dinero llegó. Una barra gris se mueve mientras espera.',
+          'Tu pago fue procesado: la empresa lo confirmó. Se pone en verde y muestra el tipo de pago (por ejemplo Zelle) y el ID del pago, que es el número de confirmación de tu captura.',
+          'Tu pago no fue aprobado: la empresa no lo pudo confirmar. Sale en rojo con el motivo que escribieron, para que sepas qué corregir.',
+        ] },
+        { tipo: 'imagen', src: '/docs/historial-pagos-es.png', alt: 'El link de pago con la lista de capturas enviadas: una en proceso y una procesada en verde' },
+        { tipo: 'h2', texto: 'Bueno saber' },
+        { tipo: 'lista', items: [
+          'La lista se actualiza sola cada 30 segundos mientras haya un pago en proceso. También puedes recargar la página.',
+          'Solo ves tus propias capturas, y solo las que enviaste a esa empresa.',
+          'Todos tus pagos a todas las empresas también están en «Mis pagos», en tu inicio.',
+        ] },
+        { tipo: 'nota', texto: 'FinTwin no mueve dinero. Guarda el registro de las capturas para que tú y la empresa vean lo mismo.' },
+      ],
+    },
+  },
+  {
+    slug: 'validation-key',
+    seccion: 'empezar',
+    titulo: { en: 'One validation key for the account', es: 'Una clave única para validar' },
+    resumen: {
+      en: 'Make sure only the person who can see the bank account approves payments. Whoever creates the validation key is the only one who knows it and can change it.',
+      es: 'Haz que solo apruebe los pagos la persona que puede ver la cuenta del banco. Quien crea la clave única es el único que la sabe y la puede cambiar.',
+    },
+    cuerpo: {
+      en: [
+        { tipo: 'p', texto: 'In FinTwin each person on the team approves receipts with their own 4-digit PIN. That works when everyone can check the bank. But often the person who creates the FinTwin account is not the one who owns the bank account: for example, the business runs in one country and the account that receives the money belongs to someone in another country. Only that person can tell whether the money really arrived.' },
+        { tipo: 'p', texto: 'For those cases there is the validation key: a single key for the whole account. Once it exists, approving, rejecting or putting a payment on hold asks for that key, not each person’s PIN.' },
+        { tipo: 'h2', texto: 'How to create it' },
+        { tipo: 'pasos', items: [
+          'The person who will validate opens the account and taps the menu (⋮).',
+          'Taps “Validation key”.',
+          'Types their personal PIN to confirm it is them, then the new 4-digit key twice.',
+          'Taps “Create the validation key”. From now on, only that key approves or rejects.',
+        ] },
+        { tipo: 'imagen', src: '/docs/clave-unica-en.png', alt: 'The validation key window inside a FinTwin account' },
+        { tipo: 'h2', texto: 'The rules' },
+        { tipo: 'lista', items: [
+          'It is optional. The account owner or any validator can create it.',
+          'Whoever creates it first is the only one who knows it. Nobody else can see it or change it, not even the account owner.',
+          'The person who created it can change it at any time, typing the current key.',
+          'The account owner cannot remove the person who holds the key from the team. If that person leaves the account on their own, the key goes with them and everyone goes back to their own PIN.',
+          'Five wrong attempts lock the key for 15 minutes, just like the PIN.',
+        ] },
+        { tipo: 'nota', texto: 'If you hold the key, keep it to yourself. Our team will never ask for it.' },
+      ],
+      es: [
+        { tipo: 'p', texto: 'En FinTwin cada persona del equipo aprueba las capturas con su propio PIN de 4 números. Eso funciona cuando todos pueden revisar el banco. Pero muchas veces quien crea la cuenta en FinTwin no es el dueño de la cuenta del banco: por ejemplo, el negocio funciona en un país y la cuenta que recibe el dinero es de alguien en otro país. Solo esa persona puede saber si el dinero de verdad llegó.' },
+        { tipo: 'p', texto: 'Para eso existe la clave única: una sola clave para toda la cuenta. Cuando existe, aprobar, rechazar o poner un pago en espera pide esa clave, no el PIN de cada persona.' },
+        { tipo: 'h2', texto: 'Cómo se crea' },
+        { tipo: 'pasos', items: [
+          'La persona que va a validar abre la cuenta y toca el menú (⋮).',
+          'Toca «Clave única para validar».',
+          'Escribe su PIN personal para confirmar que es ella, y después la clave nueva de 4 números dos veces.',
+          'Toca «Crear la clave única». Desde ese momento, solo esa clave aprueba o rechaza.',
+        ] },
+        { tipo: 'imagen', src: '/docs/clave-unica-es.png', alt: 'La ventana de la clave única dentro de una cuenta de FinTwin' },
+        { tipo: 'h2', texto: 'Las reglas' },
+        { tipo: 'lista', items: [
+          'Es opcional. La puede crear el dueño de la cuenta o cualquier validador.',
+          'Quien la crea primero es el único que la sabe. Nadie más la puede ver ni cambiar, ni siquiera el dueño de la cuenta.',
+          'Quien la creó la puede cambiar cuando quiera, escribiendo la clave actual.',
+          'El dueño de la cuenta no puede sacar del equipo a quien tiene la clave. Si esa persona sale de la cuenta por su cuenta, la clave se va con ella y cada uno vuelve a su propio PIN.',
+          'Cinco intentos equivocados bloquean la clave por 15 minutos, igual que el PIN.',
+        ] },
+        { tipo: 'nota', texto: 'Si tú tienes la clave, guárdala solo para ti. Nuestro equipo nunca te la va a pedir.' },
+      ],
+    },
+  },
 ];
 
 function sinAcentos(s: string): string {

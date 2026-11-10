@@ -101,6 +101,8 @@ export async function otroCodigo(ctx: Ctx): Promise<Response> {
 /** Quitar el acceso: la persona deja de ver la cuenta y el código deja de servir. */
 export async function quitarAcceso(ctx: Ctx): Promise<Response> {
   const { m, a } = await accesoDeLaCuenta(ctx);
+  // Quien tiene la clave única no se puede quitar: el dueño volvería a validar solo (C-CLAVE-UNICA-1).
+  if (a.usuario_id && a.usuario_id === m.clave_validar_por) throw new HttpError(400, 'tiene_la_clave_unica');
   const db = ctx.env.DB;
   await db.batch([
     db.prepare('UPDATE accesos SET anulado_en = ?, codigo_hash = NULL WHERE id = ?').bind(ctx.now, a.id),

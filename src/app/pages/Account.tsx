@@ -36,6 +36,7 @@ import { Aviso, AvisoBorrador, Boton, Campo, Cargando, Modal, Pagina, Tarjeta } 
 import { TicketConIA, type LecturaTicket } from '../components/TicketConIA';
 import { Visor } from '../components/Visor';
 import { CATEGORIAS, claveCategoria } from '../lib/categorias';
+import { recordarClaveUnica, useEtiquetaValidar } from '../lib/claveUnica';
 import { api, ApiError, type CuentaDetalle, type Lectura, type Movimiento, type Movimientos, type Uso } from '../lib/api';
 import { useBorrador } from '../lib/borrador';
 import { imagenParaSubir } from '../lib/imagen';
@@ -46,6 +47,7 @@ type Dialogo =
   | null
   | 'salida'
   | 'pin'
+  | 'clave'
   | 'ajustes'
   | 'salir'
   | { tipo: 'aprobar' | 'espera' | 'cancelar'; mov: Movimiento };
@@ -94,7 +96,7 @@ export function Account() {
   const [error, setError] = useState('');
 
   const cargarDetalle = useCallback(() => {
-    api.get<CuentaDetalle>(`/cuentas/${id}`).then(setDetalle).catch((e) => setError(msg(e)));
+    api.get<CuentaDetalle>(`/cuentas/${id}`).then((d) => { recordarClaveUnica(d.cuenta.id, d.clave_unica?.activa); setDetalle(d); }).catch((e) => setError(msg(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
   const cargar = useCallback(() => {
@@ -182,6 +184,7 @@ export function Account() {
             { texto: t('account.payLink'), icono: <QrCode className="h-4 w-4" />, onClick: () => navigate(`/accounts/${id}/link`) },
             ...(esDueno ? [{ texto: t('account.addPeople'), icono: <UserPlus className="h-4 w-4" />, onClick: () => navigate(`/accounts/${id}/team`) }] : []),
             { texto: t('account.myPin'), icono: <KeyRound className="h-4 w-4" />, onClick: () => setDialogo('pin') },
+            { texto: t('unique.menu'), icono: <ShieldCheck className="h-4 w-4" />, onClick: () => setDialogo('clave') },
             ...(esDueno ? [{ texto: t('account.settings'), icono: <Settings className="h-4 w-4" />, onClick: () => setDialogo('ajustes') }] : []),
             {
               texto: t('mov.info'),
@@ -358,6 +361,12 @@ export function Account() {
         totalCent={datos.total_cent}
         onCerrar={() => setDialogo(null)}
         onListo={() => trasAccion(t('outflow.done'))}
+      />
+      <DialogoClaveUnica
+        abierto={dialogo === 'clave'}
+        detalle={detalle}
+        onCerrar={() => setDialogo(null)}
+        onListo={(texto) => { setDialogo(null); setAviso({ tipo: 'exito', texto }); cargarDetalle(); }}
       />
       <DialogoPin abierto={dialogo === 'pin'} cuentaId={id} onCerrar={() => setDialogo(null)} onListo={() => { setDialogo(null); setAviso({ tipo: 'exito', texto: t('myPin.done') }); }} />
       <DialogoAjustes
@@ -679,6 +688,7 @@ function DialogoMovimiento({
   onListo: (texto: string) => void;
 }) {
   const { t, idioma } = useI18n();
+  const etiquetaValidar = useEtiquetaValidar(cuentaId);
   const msg = useMensajeError();
   const { usuario } = useSesion();
   const [pin, setPin] = useState('');
@@ -725,7 +735,7 @@ function DialogoMovimiento({
                 <Campo etiqueta={t('mov.holdNote')} maxLength={200} value={nota} onChange={(e) => b.set('nota', e.target.value)} />
               </>
             )}
-            <CampoClave pin autoFocus etiqueta={t('pin.title')} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+            <CampoClave pin autoFocus etiqueta={etiquetaValidar} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
           </>
         )}
         {error && <Aviso tipo="error">{error}</Aviso>}
@@ -762,6 +772,7 @@ function DialogoMovimiento({
  */
 function RegistrarComprobante({ cuentaId, nombre, pct, onListo }: { cuentaId: string; nombre: string; pct: number; onListo: () => void }) {
   const { t, idioma } = useI18n();
+  const etiquetaValidar = useEtiquetaValidar(cuentaId);
   const msg = useMensajeError();
   const { usuario } = useSesion();
   const b = useBorrador(`registrar-${cuentaId}`, usuario?.id ?? 'anonimo', { monto: '', notas: '' });
@@ -969,7 +980,7 @@ function RegistrarComprobante({ cuentaId, nombre, pct, onListo }: { cuentaId: st
             <p className="font-semibold">{t('dup.sure')}</p>
             <p className="mt-1 text-sm text-red-200">{t('dup.needPin')}</p>
           </div>
-          <CampoClave pin autoFocus etiqueta={t('pin.title')} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+          <CampoClave pin autoFocus etiqueta={etiquetaValidar} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
           {error && <Aviso tipo="error">{error}</Aviso>}
           <div className="flex gap-2">
             <Boton type="button" variante="secundario" className="flex-1" onClick={() => { setAceptar(false); setPin(''); }}>
@@ -1106,6 +1117,60 @@ export function SelectorCategoria({ valor, onCambio }: { valor: string; onCambio
         ))}
       </select>
     </label>
+  );
+}
+
+/** Clave única para validar (C-CLAVE-UNICA-1): crearla, cambiarla si es mía, o ver quién la tiene. */
+function DialogoClaveUnica({ abierto, detalle, onCerrar, onListo }: { abierto: boolean; detalle: CuentaDetalle; onCerrar: () => void; onListo: (texto: string) => void }) {
+  const { t, idioma } = useI18n();
+  const msg = useMensajeError();
+  const [pin, setPin] = useState('');
+  const [nueva, setNueva] = useState('');
+  const [repite, setRepite] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState('');
+  const estado = detalle.clave_unica ?? { activa: false, por_mi: false, nombre: null, en: null };
+  const fecha = estado.en ? new Date(estado.en).toLocaleDateString(idioma === 'es' ? 'es-US' : 'en-US', { dateStyle: 'medium' }) : '';
+  const solo = (v: string) => v.replace(/\D/g, '').slice(0, 4);
+  async function enviar(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    if (nueva !== repite) return setError(t('unique.mismatch'));
+    setEnviando(true);
+    try {
+      await api.post(`/cuentas/${detalle.cuenta.id}/clave-unica`, estado.activa ? { actual: pin, nueva } : { pin, nueva });
+      setPin('');
+      setNueva('');
+      setRepite('');
+      onListo(estado.activa ? t('unique.changed') : t('unique.created'));
+    } catch (err) {
+      setError(msg(err));
+    } finally {
+      setEnviando(false);
+    }
+  }
+  return (
+    <Modal abierto={abierto} onCerrar={onCerrar} titulo={t('unique.title')}>
+      {estado.activa && !estado.por_mi ? (
+        <div className="space-y-4" data-testid="clave-de-otro">
+          <p className="text-sm text-tenue">{t('unique.otherText', { name: estado.nombre ?? '—', date: fecha })}</p>
+          <Boton variante="secundario" className="w-full" onClick={onCerrar}>
+            {t('common.close')}
+          </Boton>
+        </div>
+      ) : (
+        <form onSubmit={enviar} className="space-y-4">
+          <p className="text-sm text-tenue">{estado.activa ? t('unique.mineText', { date: fecha }) : t('unique.offText')}</p>
+          <CampoClave pin etiqueta={estado.activa ? t('unique.current') : t('unique.myPin')} required value={pin} onChange={(e) => setPin(solo(e.target.value))} />
+          <CampoClave pin etiqueta={t('unique.new')} required value={nueva} onChange={(e) => setNueva(solo(e.target.value))} />
+          <CampoClave pin etiqueta={t('unique.repeat')} required value={repite} onChange={(e) => setRepite(solo(e.target.value))} />
+          {error && <Aviso tipo="error">{error}</Aviso>}
+          <Boton type="submit" cargando={enviando} className="w-full">
+            {estado.activa ? t('unique.change') : t('unique.create')}
+          </Boton>
+        </form>
+      )}
+    </Modal>
   );
 }
 

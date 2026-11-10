@@ -243,3 +243,10 @@ CREATE TABLE IF NOT EXISTS lecturas_ia (
   estado TEXT NOT NULL,
   creado_en INTEGER NOT NULL
 );
+
+-- 10 nov 2026: clave única para validar. Opcional. La crea el dueño o un validador; desde ese
+-- momento aprobar, rechazar, poner en espera o aceptar una repetida pide ESA clave (no el PIN
+-- personal), y solo quien la creó puede cambiarla. Nadie más la sabe ni la puede cambiar.
+ALTER TABLE cuentas ADD COLUMN clave_validar_hash TEXT;
+ALTER TABLE cuentas ADD COLUMN clave_validar_por TEXT;
+ALTER TABLE cuentas ADD COLUMN clave_validar_en INTEGER;

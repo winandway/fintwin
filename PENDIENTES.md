@@ -2,6 +2,18 @@
 
 > Al día el 3 de noviembre de 2026. Se ejecuta en orden; lo marcado 👤 depende de Richard.
 
+## Pedidos de Richard (10 nov 2026)
+
+- [x] **Historial de quien paga** en el link de pago: cada captura con «En proceso» (barra gris), «Tu pago fue
+  procesado» (verde, con tipo de pago e ID) o «No fue aprobado» (rojo, con el motivo). Candado C-HISTORIAL-PAGADOR-1.
+  Guía en Docs «payment-status».
+- [x] **Clave única para validar**: opcional; la crea el dueño o un validador, solo quien la crea la sabe y la
+  cambia, y desde ahí aprobar/rechazar/poner en espera pide esa clave. Candado C-CLAVE-UNICA-1. Guía «validation-key».
+- [ ] **Selector de tipo de pago** en el link (bolívares, dólares, Zelle… y «Otro» escrito). Richard dijo «para
+  después» (10 nov 2026).
+- [ ] **Botón «Tomar foto»** junto a «Subir desde archivos» en toda casilla de imagen (regla global del 9 nov 2026):
+  link de pago, registrar en la cuenta, salidas, gastos de comisión y casos de ayuda, con su candado.
+
 ## Tiendas
 
 - [ ] 👤 **Apple (iPhone) — RECHAZADA el 3 nov 2026, 11:58 am, por 4.3 Spam y 4.2.6** (mismo minuto que otras

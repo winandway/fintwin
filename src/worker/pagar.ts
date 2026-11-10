@@ -105,7 +105,8 @@ export async function misPagos(ctx: Ctx): Promise<Response> {
     .bind(u.id)
     .all();
   const comprobantes = await ctx.env.DB.prepare(
-    `SELECT k.id, k.estado, k.monto_cent, k.fecha_pago, k.confirmacion, k.creado_en, c.nombre AS cuenta_nombre
+    `SELECT k.id, k.estado, k.monto_cent, k.fecha_pago, k.confirmacion, k.creado_en, c.nombre AS cuenta_nombre,
+       c.link_slug, k.plataforma, k.revisado_en, CASE WHEN k.estado = 'rechazado' THEN k.motivo END AS motivo
      FROM comprobantes k JOIN cuentas c ON c.id = k.cuenta_id
      WHERE k.subido_por = ? AND k.tipo = 'ingreso' AND COALESCE(k.via, 'link') = 'link' ORDER BY k.creado_en DESC LIMIT 100`,
   )
