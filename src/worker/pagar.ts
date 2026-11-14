@@ -1,4 +1,4 @@
-import { aCentavos, normalizarConfirmacion } from '../shared/reglas';
+import { aCentavos, normalizarConfirmacion, tipoPagoAGuardar } from '../shared/reglas';
 import { exigirUsuario } from './auth';
 import { leerImagen, textoCorto } from './archivos';
 import { buscarRepetida, columnasLectura, lecturaDe, SQL_COLUMNAS_LECTURA } from './capturas';
@@ -74,6 +74,9 @@ export async function subirCaptura(ctx: Ctx): Promise<Response> {
   // Repetida en cualquier cuenta (sin contar rechazadas): no entra.
   if (await buscarRepetida(ctx.env, archivo.hash, confirmacion)) throw new HttpError(409, 'comprobante_repetido');
 
+  const tipoPago = tipoPagoAGuardar(form.get('tipo_pago'), form.get('tipo_pago_otro'));
+  if (tipoPago === 'falta_otro') throw new HttpError(422, 'tipo_pago_otro');
+
   const fechaManual = String(form.get('fecha') ?? '');
   const l = lectura ?? { ...LECTURA_VACIA, fecha: /^\d{4}-\d{2}-\d{2}$/.test(fechaManual) ? fechaManual : null };
   const id = newId();
@@ -82,18 +85,18 @@ export async function subirCaptura(ctx: Ctx): Promise<Response> {
   await ctx.env.DB.batch([
     ctx.env.DB.prepare(
       `INSERT INTO comprobantes (id, cuenta_id, subido_por, tipo, estado, monto_cent, confirmacion, confirmacion_norm,
-         ${SQL_COLUMNAS_LECTURA}, notas, lectura, via, archivo_clave, archivo_hash, archivo_tipo, creado_en)
-       VALUES (?, ?, ?, 'ingreso', 'pendiente', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'link', ?, ?, ?, ?)`,
+         ${SQL_COLUMNAS_LECTURA}, notas, lectura, via, archivo_clave, archivo_hash, archivo_tipo, creado_en, tipo_pago)
+       VALUES (?, ?, ?, 'ingreso', 'pendiente', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'link', ?, ?, ?, ?, ?)`,
     ).bind(
       id, cuenta.id, u.id, montoCent, confirmacion, norm, ...columnasLectura(lectura ? l : { ...l, estado: 'failed' }),
-      textoCorto(form.get('nota'), 300), lectura ? 'ia' : 'manual', clave, archivo.hash, archivo.mime, ctx.now,
+      textoCorto(form.get('nota'), 300), lectura ? 'ia' : 'manual', clave, archivo.hash, archivo.mime, ctx.now, tipoPago,
     ),
     ctx.env.DB.prepare(
       'INSERT INTO beneficiarios (usuario_id, cuenta_id, agregado_en) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
     ).bind(u.id, cuenta.id, ctx.now),
   ]);
   await avisarCapturaNueva(ctx.env, cuenta, montoCent, u.nombre, ctx.now);
-  return json({ ok: true, id, lectura: { ...l, monto_cent: montoCent, confirmacion, modo: lectura ? 'ia' : 'manual' } }, 201);
+  return json({ ok: true, id, lectura: { ...l, monto_cent: montoCent, confirmacion, modo: lectura ? 'ia' : 'manual' }, tipo_pago: tipoPago }, 201);
 }
 
 export async function misPagos(ctx: Ctx): Promise<Response> {
@@ -106,7 +109,7 @@ export async function misPagos(ctx: Ctx): Promise<Response> {
     .all();
   const comprobantes = await ctx.env.DB.prepare(
     `SELECT k.id, k.estado, k.monto_cent, k.fecha_pago, k.confirmacion, k.creado_en, c.nombre AS cuenta_nombre,
-       c.link_slug, k.plataforma, k.revisado_en, CASE WHEN k.estado = 'rechazado' THEN k.motivo END AS motivo
+       c.link_slug, k.plataforma, k.tipo_pago, k.revisado_en, CASE WHEN k.estado = 'rechazado' THEN k.motivo END AS motivo
      FROM comprobantes k JOIN cuentas c ON c.id = k.cuenta_id
      WHERE k.subido_por = ? AND k.tipo = 'ingreso' AND COALESCE(k.via, 'link') = 'link' ORDER BY k.creado_en DESC LIMIT 100`,
   )

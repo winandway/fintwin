@@ -133,3 +133,31 @@ cuentas (85 %) y gastos (89 %) todavía no llegan al 90 % y quedan en su piso. F
   personal). Guía pública `/docs/validation-key`.
 - **Qué NO tocar:** nunca devolver el hash ni permitir a otra persona cambiarla o borrarla. Si se pierde, se
   atiende por soporte.
+
+## C-TIPO-PAGO-1 — selector de tipo de pago en el link (13 nov 2026)
+
+- **Qué es:** en el link de pago, debajo del monto, «Tipo de pago (opcional)»: Zelle, bolívares, dólares,
+  transferencia, PayPal, tarjeta u «Otro» con el nombre escrito (máx. 40 letras). Lo ve el equipo en la revisión
+  y en el detalle del movimiento, y quien pagó en su historial.
+- **Cómo se hizo:** lista y regla `TIPOS_PAGO` / `tipoPagoAGuardar` en `src/shared/reglas.ts` (la misma para las
+  pantallas y el servidor). Columna `comprobantes.tipo_pago` (clave, u `otro:<texto>`). `subirCaptura` responde
+  422 `tipo_pago_otro` si eligió «Otro» sin escribir. Se muestra con `tipoPagoBonito` (`Comprobantes.tsx`).
+  Va en el borrador del formulario (no se pierde al cerrar).
+- **Cómo se comprueba:** `test/worker/tipo-pago.test.ts` (rojo comprobado guardando null) y
+  `test/app/tipo-pago.test.tsx` (rojo comprobado sin mandar el campo). Guía pública `/docs/payment-type`.
+- **Qué NO tocar:** es opcional; no volverlo obligatorio sin que Richard lo pida.
+
+## C-CAMARA-1 — «Tomar foto» en toda casilla de imagen (13 nov 2026, regla global del 9 nov)
+
+- **Qué es:** cada casilla de imagen tiene «Subir desde archivos» y «Tomar foto». Celular y app: cámara trasera
+  del sistema (`<input capture="environment">`). Computadora: cámara web en una ventanita con «Capturar».
+  Sin cámara o sin permiso, lo dice en palabras y se sigue pudiendo subir desde archivos.
+- **Cómo se hizo:** UNA pieza: `src/app/lib/camara.ts` + `src/app/components/BotonCamara.tsx`
+  (`BotonCamara` y `SubirOFoto`). La foto entra por la MISMA función `elegir` de cada casilla (misma validación y
+  compresión). Casillas: link de pago, registrar en la cuenta, ticket de salidas y gastos de comisión, adjuntos
+  de Ayuda.
+- **Cómo se comprueba:** `test/app/camara.test.tsx`: recorre todos los `.tsx` de `src/app` y se pone en ROJO si
+  una casilla `type="file" accept="image…"` no tiene su `<SubirOFoto>`/`<BotonCamara>` (comprobado quitándola
+  de Ayuda). Guía pública `/docs/take-photo`.
+- **Qué NO tocar:** toda casilla de imagen nueva lleva `SubirOFoto`. La cámara se abre una sola vez por ventana
+  (las funciones del padre van por ref; si no, se reinicia con cada pintada).

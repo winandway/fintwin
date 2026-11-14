@@ -24,7 +24,7 @@ function desfase(ctx: Ctx): number {
 }
 
 const SQL_MOVIMIENTO = `SELECT k.id, k.tipo, k.estado, k.en_espera, k.monto_cent, k.comision_cent, k.fecha_pago, k.confirmacion,
-    k.pagador, k.pagador_correo, k.beneficiario, k.beneficiario_correo, k.plataforma, k.lectura_estado, k.monto_leido_cent,
+    k.pagador, k.pagador_correo, k.beneficiario, k.beneficiario_correo, k.plataforma, k.tipo_pago, k.lectura_estado, k.monto_leido_cent,
     k.motivo, k.notas, k.comercio, k.categoria, k.lectura, k.via, k.archivo_clave IS NOT NULL AS tiene_archivo,
     k.creado_en, k.revisado_en, s.nombre AS subido_por_nombre, r.nombre AS revisado_por_nombre,
     CASE WHEN k.tipo = 'ingreso' THEN (SELECT COUNT(*) FROM comprobantes o WHERE o.id <> k.id AND o.tipo = 'ingreso'

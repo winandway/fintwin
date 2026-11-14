@@ -370,6 +370,102 @@ export const GUIAS: Guia[] = [
       ],
     },
   },
+  {
+    slug: 'payment-type',
+    seccion: 'empezar',
+    titulo: { en: 'Choose how you paid', es: 'Elige cómo pagaste' },
+    resumen: {
+      en: 'When you send a receipt through a payment link, you can say how you paid: Zelle, bolívares, US dollars, bank transfer, PayPal, card or any other method you type.',
+      es: 'Cuando mandas una captura por un link de pago, puedes decir cómo pagaste: Zelle, bolívares, dólares, transferencia, PayPal, tarjeta o cualquier otro que escribas.',
+    },
+    cuerpo: {
+      en: [
+        { tipo: 'p', texto: 'Businesses get paid in many ways at once. Telling them how you paid helps them find your money faster: the person who checks the payments knows whether to look in Zelle, in the bolívar account or in the cash drawer.' },
+        { tipo: 'h2', texto: 'How it works' },
+        { tipo: 'pasos', items: [
+          'Open the payment link the business shared with you and upload the photo of your receipt.',
+          'Under the amount, open “Payment type” and choose how you paid: Zelle, bolívares (Pago Móvil or transfer), US dollars (cash or transfer), bank transfer, PayPal or card.',
+          'If your method is not on the list, choose “Other” and type its name, for example Binance, Zinli or Wise.',
+          'Confirm the payment is for that business and tap “Send receipt”.',
+        ] },
+        { tipo: 'imagen', src: '/docs/tipo-pago-en.png', alt: 'The payment link with the Payment type list set to Other and the method typed by hand' },
+        { tipo: 'h2', texto: 'Where it shows up' },
+        { tipo: 'lista', items: [
+          'The business sees the payment type next to your receipt when it reviews it.',
+          'You see it in your list of receipts sent, on the same payment link, along with the status of each one.',
+          'It is optional. If you don’t choose one, your receipt is sent just the same.',
+        ] },
+        { tipo: 'nota', texto: 'FinTwin does not move money. Choosing a payment type only helps the business find your payment.' },
+      ],
+      es: [
+        { tipo: 'p', texto: 'Los negocios cobran de muchas formas a la vez. Decirles cómo pagaste les ayuda a encontrar tu dinero más rápido: quien revisa los pagos sabe si tiene que mirar en Zelle, en la cuenta de bolívares o en la caja.' },
+        { tipo: 'h2', texto: 'Cómo funciona' },
+        { tipo: 'pasos', items: [
+          'Abre el link de pago que te mandó la empresa y sube la foto de tu captura.',
+          'Debajo del monto, abre «Tipo de pago» y elige cómo pagaste: Zelle, bolívares (Pago Móvil o transferencia), dólares (efectivo o transferencia), transferencia bancaria, PayPal o tarjeta.',
+          'Si tu forma de pago no está en la lista, elige «Otro» y escribe su nombre, por ejemplo Binance, Zinli o Wise.',
+          'Confirma que el pago es para esa empresa y toca «Enviar captura».',
+        ] },
+        { tipo: 'imagen', src: '/docs/tipo-pago-es.png', alt: 'El link de pago con la lista Tipo de pago en Otro y la forma de pago escrita a mano' },
+        { tipo: 'h2', texto: 'Dónde se ve' },
+        { tipo: 'lista', items: [
+          'La empresa ve el tipo de pago junto a tu captura cuando la revisa.',
+          'Tú lo ves en tu lista de capturas enviadas, en el mismo link de pago, junto con el estado de cada una.',
+          'Es opcional. Si no eliges ninguno, tu captura se envía igual.',
+        ] },
+        { tipo: 'nota', texto: 'FinTwin no mueve dinero. Elegir el tipo de pago solo le ayuda a la empresa a encontrar tu pago.' },
+      ],
+    },
+  },
+  {
+    slug: 'take-photo',
+    seccion: 'empezar',
+    titulo: { en: 'Take a photo with your camera', es: 'Toma la foto con tu cámara' },
+    resumen: {
+      en: 'Every place in FinTwin where you add an image has two buttons: Upload from files and Take photo. Take a picture of a receipt or a ticket right there, without saving it first.',
+      es: 'Cada lugar de FinTwin donde agregas una imagen tiene dos botones: Subir desde archivos y Tomar foto. Fotografía el comprobante o el ticket ahí mismo, sin guardarlo antes.',
+    },
+    cuerpo: {
+      en: [
+        { tipo: 'p', texto: 'Sometimes the receipt is on paper or on another person’s screen. Instead of taking the picture, finding it in your gallery and attaching it, you can take it straight from FinTwin.' },
+        { tipo: 'h2', texto: 'Where you find it' },
+        { tipo: 'lista', items: [
+          'On the payment link, to send your payment receipt.',
+          'Inside an account, when you record a receipt.',
+          'When you record an outflow or spend the fee, for the ticket or invoice.',
+          'In Help, to attach screenshots to a case.',
+        ] },
+        { tipo: 'imagen', src: '/docs/tipo-pago-en.png', alt: 'The Upload from files and Take photo buttons under the receipt box' },
+        { tipo: 'h2', texto: 'How it works' },
+        { tipo: 'pasos', items: [
+          'Tap “Take photo”.',
+          'On a phone, the back camera opens. On a computer, a small window opens with your webcam.',
+          'Frame the receipt so the amount and the confirmation number are visible, and take the picture (on a computer, tap “Capture”).',
+          'The photo goes into the same box as if you had chosen it from your files, and is read and checked the same way.',
+        ] },
+        { tipo: 'nota', texto: 'The first time, your phone or browser asks for permission to use the camera. If you don’t allow it, or your device has no camera, FinTwin tells you so and you can still upload the photo from your files.' },
+      ],
+      es: [
+        { tipo: 'p', texto: 'A veces el comprobante está en papel o en la pantalla de otra persona. En vez de tomar la foto, buscarla en la galería y adjuntarla, la puedes tomar directo desde FinTwin.' },
+        { tipo: 'h2', texto: 'Dónde está' },
+        { tipo: 'lista', items: [
+          'En el link de pago, para mandar la captura de tu pago.',
+          'Dentro de una cuenta, al registrar un comprobante.',
+          'Al registrar una salida o gastar la comisión, para el ticket o la factura.',
+          'En Ayuda, para adjuntar capturas a un caso.',
+        ] },
+        { tipo: 'imagen', src: '/docs/tipo-pago-es.png', alt: 'Los botones Subir desde archivos y Tomar foto debajo de la casilla del comprobante' },
+        { tipo: 'h2', texto: 'Cómo funciona' },
+        { tipo: 'pasos', items: [
+          'Toca «Tomar foto».',
+          'En el celular se abre la cámara trasera. En la computadora se abre una ventanita con tu cámara web.',
+          'Encuadra el comprobante para que se vean el monto y el número de confirmación, y toma la foto (en la computadora, toca «Capturar»).',
+          'La foto entra a la misma casilla que si la hubieras elegido de tus archivos, y se lee y se revisa igual.',
+        ] },
+        { tipo: 'nota', texto: 'La primera vez, tu celular o tu navegador te pide permiso para usar la cámara. Si no lo das, o tu equipo no tiene cámara, FinTwin te lo dice y puedes subir la foto desde tus archivos.' },
+      ],
+    },
+  },
 ];
 
 function sinAcentos(s: string): string {

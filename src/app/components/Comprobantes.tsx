@@ -1,6 +1,6 @@
 import { AlertTriangle, Ban, CheckCircle, CheckCircle2, Clock, Loader2, Sparkles, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { formatoDinero } from '../../shared/reglas';
+import { formatoDinero, TIPOS_PAGO, type TipoPago } from '../../shared/reglas';
 import { api, type Lectura, type Uso } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 
@@ -82,8 +82,15 @@ export function plataformaBonita(p: string | null): string | null {
   return { zelle: 'Zelle', zinli: 'Zinli', paypal: 'PayPal', cashapp: 'Cash App', venmo: 'Venmo', other: 'Other' }[p] ?? p;
 }
 
+/** El tipo de pago elegido en el link, en palabras: la clave traducida o lo que escribió en «Otro». */
+export function tipoPagoBonito(v: string | null | undefined, t: (k: `paytype.${TipoPago}`) => string): string | null {
+  if (!v) return null;
+  if (v.startsWith('otro:')) return v.slice(5) || null;
+  return (TIPOS_PAGO as readonly string[]).includes(v) ? t(`paytype.${v as TipoPago}`) : v;
+}
+
 /** Los datos leídos por la IA en una rejilla pequeña (De, Email, A, Plataforma, Fecha…). */
-export function DatosLeidos({ l, conMonto = true }: { l: Partial<Omit<Lectura, 'estado'>> & { monto_cent?: number | null }; conMonto?: boolean }) {
+export function DatosLeidos({ l, conMonto = true }: { l: Partial<Omit<Lectura, 'estado'>> & { monto_cent?: number | null; tipo_pago?: string | null }; conMonto?: boolean }) {
   const { t, idioma } = useI18n();
   const filas: [string, string | null | undefined, boolean?][] = [
     ...(conMonto ? ([[t('read.amount'), l.monto_cent ? formatoDinero(l.monto_cent, idioma) : null]] as [string, string | null][]) : []),
@@ -92,6 +99,7 @@ export function DatosLeidos({ l, conMonto = true }: { l: Partial<Omit<Lectura, '
     [t('read.email'), l.pagador_correo],
     [t('read.to'), l.beneficiario],
     [t('read.emailTo'), l.beneficiario_correo],
+    [t('paytype.shown'), tipoPagoBonito(l.tipo_pago, t)],
     [t('read.platform'), plataformaBonita(l.plataforma ?? null)],
     [t('read.date'), l.fecha],
   ];

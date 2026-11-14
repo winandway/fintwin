@@ -33,3 +33,20 @@ export function formatoDinero(cent: number, idioma: 'en' | 'es' = 'en'): string 
 export function comisionDe(montoCent: number, pct: number): number {
   return Math.round((montoCent * pct) / 100);
 }
+
+/** Tipos de pago que quien paga puede elegir en el link. «otro» lleva el nombre escrito a mano. */
+export const TIPOS_PAGO = ['zelle', 'bolivares', 'dolares', 'transferencia', 'paypal', 'tarjeta', 'otro'] as const;
+export type TipoPago = (typeof TIPOS_PAGO)[number];
+
+/**
+ * Lo que se guarda: la clave del tipo elegido, o el texto escrito si eligió «otro».
+ * null si no eligió nada (es opcional). 'falta_otro' si eligió «otro» y no escribió cuál.
+ */
+export function tipoPagoAGuardar(tipo: unknown, otro: unknown): string | null | 'falta_otro' {
+  const t = typeof tipo === 'string' ? tipo.trim() : '';
+  if (!t) return null;
+  if (!(TIPOS_PAGO as readonly string[]).includes(t)) return null;
+  if (t !== 'otro') return t;
+  const texto = (typeof otro === 'string' ? otro : '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  return texto ? `otro:${texto}` : 'falta_otro';
+}

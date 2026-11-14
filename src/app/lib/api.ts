@@ -91,6 +91,8 @@ export interface Comprobante {
   en_espera?: number;
   via?: 'link' | 'cuenta' | null;
   plataforma?: string | null;
+  /** Tipo de pago elegido en el link: clave o «otro:<texto>». */
+  tipo_pago?: string | null;
   monto_leido_cent?: number | null;
 }
 

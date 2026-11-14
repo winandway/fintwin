@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { formatoDinero } from '../../shared/reglas';
 import { api } from '../lib/api';
 import { useI18n } from '../lib/i18n';
-import { plataformaBonita } from './Comprobantes';
+import { plataformaBonita, tipoPagoBonito } from './Comprobantes';
 
 export interface PagoEnviado {
   id: string;
@@ -14,6 +14,7 @@ export interface PagoEnviado {
   revisado_en: number | null;
   link_slug: string;
   plataforma: string | null;
+  tipo_pago?: string | null;
   motivo: string | null;
 }
 
@@ -56,7 +57,7 @@ export function HistorialPagos({ slug, version = 0 }: { slug: string; version?: 
       <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wider text-gray-300">{t('history.title')}</h2>
       <ul className="space-y-2">
         {pagos.map((k) => {
-          const tipo = plataformaBonita(k.plataforma) ?? t('history.payment');
+          const tipo = tipoPagoBonito(k.tipo_pago, t) ?? plataformaBonita(k.plataforma) ?? t('history.payment');
           const dinero = <span className="font-mono font-bold">{formatoDinero(k.monto_cent, idioma)}</span>;
           if (k.estado === 'aprobado') {
             return (

@@ -1,6 +1,7 @@
 import { FileImage, ImagePlus, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { api } from '../lib/api';
+import { SubirOFoto } from './BotonCamara';
 import { useI18n } from '../lib/i18n';
 import { prepararImagen } from '../lib/imagen';
 
@@ -71,6 +72,7 @@ export function TicketConIA({
         {leyendo ? <Loader2 className="h-5 w-5 animate-spin" /> : archivo ? <FileImage className="h-5 w-5" /> : <ImagePlus className="h-5 w-5" />}
         {leyendo ? t('expense.reading') : archivo ? t('pay.change') : t('expense.ticketHint')}
       </button>
+      <SubirOFoto onArchivos={() => ref.current?.click()} onFoto={(f) => void elegir(f)} />
       {estado !== 'nada' && !leyendo && (
         <p className={`text-xs ${estado === 'leido' ? 'text-green-300' : 'text-amber-300'}`}>
           {estado === 'leido' ? t('expense.read') : t('expense.readPartial')}

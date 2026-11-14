@@ -234,7 +234,7 @@ export async function listarComprobantes(ctx: Ctx): Promise<Response> {
   const { results } = await ctx.env.DB.prepare(
     `SELECT k.id, k.tipo, k.estado, k.monto_cent, k.comision_cent, k.fecha_pago, k.confirmacion, k.pagador,
        k.beneficiario, k.motivo, k.notas, k.comercio, k.categoria, k.lectura, k.archivo_clave IS NOT NULL AS tiene_archivo, k.creado_en, k.revisado_en,
-       k.en_espera, k.via, k.plataforma, k.monto_leido_cent,
+       k.en_espera, k.via, k.plataforma, k.tipo_pago, k.monto_leido_cent,
        s.nombre AS subido_por_nombre, CASE WHEN s.sin_correo = 1 THEN NULL ELSE s.email END AS subido_por_email, r.nombre AS revisado_por_nombre
      FROM comprobantes k
      LEFT JOIN usuarios s ON s.id = k.subido_por

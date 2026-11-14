@@ -30,6 +30,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { comisionDe, formatoDinero } from '../../shared/reglas';
+import { SubirOFoto } from '../components/BotonCamara';
 import { CampoClave } from '../components/CampoClave';
 import { AvisoDuplicada, DatosLeidos, fechaCorta, HistorialRepetida, InsigniaEstado, PanelLectura, PuntoEstado } from '../components/Comprobantes';
 import { Aviso, AvisoBorrador, Boton, Campo, Cargando, Modal, Pagina, Tarjeta } from '../components/ui';
@@ -605,7 +606,7 @@ function FilaMovimiento({
               </button>
             </div>
           )}
-          {!salida && (k.pagador || k.beneficiario || k.plataforma || k.pagador_correo) && (
+          {!salida && (k.pagador || k.beneficiario || k.plataforma || k.tipo_pago || k.pagador_correo) && (
             <div className="rounded-xl border border-indigo-700/40 bg-indigo-900/20 p-3">
               <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase text-indigo-300">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden /> {t('mov.detected')}
@@ -908,6 +909,7 @@ function RegistrarComprobante({ cuentaId, nombre, pct, onListo }: { cuentaId: st
             </>
           )}
         </button>
+        <SubirOFoto onArchivos={() => input.current?.click()} onFoto={(f) => void elegir(f)} />
         {repetida ? (
           <AvisoDuplicada
             creadoEn={repetida.creado_en}

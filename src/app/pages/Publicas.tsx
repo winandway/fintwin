@@ -3,11 +3,12 @@ import { HistorialPagos } from '../components/HistorialPagos';
 import { AlertTriangle, Building2, CheckCircle2, ImagePlus, KeyRound, Loader2, ReceiptText, ShieldCheck, Users } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { SubirOFoto } from '../components/BotonCamara';
 import { CaptureGuide } from '../components/CaptureGuide';
 import { CampoClave } from '../components/CampoClave';
 import { plataformaBonita } from '../components/Comprobantes';
 import { Aviso, AvisoBorrador, Boton, Campo, Cargando, Pagina, Tarjeta } from '../components/ui';
-import { formatoDinero, MAX_ARCHIVO } from '../../shared/reglas';
+import { formatoDinero, MAX_ARCHIVO, TIPOS_PAGO } from '../../shared/reglas';
 import { api, ApiError, type Lectura } from '../lib/api';
 import { limpiarBorradores, useBorrador } from '../lib/borrador';
 import { useI18n, useMensajeError } from '../lib/i18n';
@@ -73,7 +74,7 @@ export function Pay() {
   const [leyendo, setLeyendo] = useState(false);
   const [lectura, setLectura] = useState<Lectura | null>(null);
   const [confirmo, setConfirmo] = useState(false);
-  const b = useBorrador(`pagar-${slug}`, usuario?.id ?? 'anonimo', { monto: '', confirmacion: '', fecha: '', nota: '' });
+  const b = useBorrador(`pagar-${slug}`, usuario?.id ?? 'anonimo', { monto: '', confirmacion: '', fecha: '', nota: '', tipo_pago: '', tipo_pago_otro: '' });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [faltaNumero, setFaltaNumero] = useState(false);
@@ -192,6 +193,7 @@ export function Pay() {
     const montoCent = Math.round((Number(b.valores.monto.replace(',', '.')) || 0) * 100);
     if (montoCent <= 0) return setError(t('pay.needAmount'));
     if (faltaCodigo) return setError(t('pay.noCode'));
+    if (b.valores.tipo_pago === 'otro' && !b.valores.tipo_pago_otro.trim()) return setError(t('err.tipo_pago_otro'));
     if (!confirmo) return setError(t('pay.confirmFirst', { name: nombre }));
     setEnviando(true);
     setFaltaNumero(false);
@@ -200,6 +202,8 @@ export function Pay() {
       form.append('archivo', archivo, 'captura');
       form.append('monto', b.valores.monto);
       form.append('nota', b.valores.nota);
+      form.append('tipo_pago', b.valores.tipo_pago);
+      if (b.valores.tipo_pago === 'otro') form.append('tipo_pago_otro', b.valores.tipo_pago_otro);
       if (!info?.lectura_ia) {
         form.append('confirmacion', b.valores.confirmacion);
         form.append('fecha', b.valores.fecha);
@@ -234,9 +238,6 @@ export function Pay() {
             <button type="button" onClick={() => input.current?.click()} className="block w-full rounded-xl bg-black">
               <img src={vista} alt="" className="mx-auto max-h-80 rounded-xl object-contain" />
             </button>
-            <button type="button" className="w-full text-sm text-tenue underline hover:text-white" onClick={() => input.current?.click()}>
-              {t('pay.change')}
-            </button>
           </div>
         ) : (
           <button
@@ -249,6 +250,7 @@ export function Pay() {
             <span className="text-xs">{t('pay.chooseHint')}</span>
           </button>
         )}
+        <SubirOFoto onArchivos={() => input.current?.click()} onFoto={(f) => void elegir(f)} />
         {leyendo && (
           <p className="flex items-center gap-2 text-sm text-tenue">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {t('pay.reading')}
@@ -291,6 +293,25 @@ export function Pay() {
               <Campo etiqueta={t('pay.confirmation')} required={exige} placeholder="0000000000" value={b.valores.confirmacion} onChange={(e) => b.set('confirmacion', e.target.value)} />
               <Campo etiqueta={t('pay.date')} type="date" value={b.valores.fecha} onChange={(e) => b.set('fecha', e.target.value)} />
             </>
+          )}
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-white">{t('paytype.label')}</span>
+            <select
+              value={b.valores.tipo_pago}
+              onChange={(e) => b.set('tipo_pago', e.target.value)}
+              className="block w-full min-w-0 rounded-xl border border-borde bg-[#0d1528] px-4 py-3 text-white outline-none focus:border-marca"
+              data-testid="tipo-pago"
+            >
+              <option value="">{t('paytype.choose')}</option>
+              {TIPOS_PAGO.map((k) => (
+                <option key={k} value={k}>
+                  {t(`paytype.${k}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {b.valores.tipo_pago === 'otro' && (
+            <Campo etiqueta={`${t('paytype.otherLabel')} *`} maxLength={40} placeholder={t('paytype.otherPh')} value={b.valores.tipo_pago_otro} onChange={(e) => b.set('tipo_pago_otro', e.target.value)} data-testid="tipo-pago-otro" />
           )}
           <Campo etiqueta={t('pay.note')} maxLength={300} placeholder={t('pay.notePh')} value={b.valores.nota} onChange={(e) => b.set('nota', e.target.value)} />
         </div>

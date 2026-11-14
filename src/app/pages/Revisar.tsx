@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Link, useParams } from 'react-router-dom';
 import { formatoDinero } from '../../shared/reglas';
 import { CampoClave } from '../components/CampoClave';
-import { fechaCorta } from '../components/Comprobantes';
+import { fechaCorta, plataformaBonita, tipoPagoBonito } from '../components/Comprobantes';
 import { Aviso, AvisoBorrador, Boton, Cargando, Modal, Pagina, Tarjeta } from '../components/ui';
 import { useBorrador } from '../lib/borrador';
 import { Visor } from '../components/Visor';
@@ -121,7 +121,7 @@ export function Review() {
                       <p className="text-sm font-semibold text-amber-300">{t('review.noCode')}</p>
                     )}
                     <p className="truncate text-xs text-tenue">
-                      {[k.pagador ?? k.subido_por_nombre, k.plataforma, fechaCorta(k.creado_en, idioma, false)].filter(Boolean).join(' · ')}
+                      {[k.pagador ?? k.subido_por_nombre, tipoPagoBonito(k.tipo_pago, t) ?? plataformaBonita(k.plataforma ?? null), fechaCorta(k.creado_en, idioma, false)].filter(Boolean).join(' · ')}
                     </p>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {k.via === 'link' && <span className="rounded bg-blue-900/50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-300">{t('review.byLink')}</span>}

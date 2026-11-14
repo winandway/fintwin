@@ -1,6 +1,6 @@
 # Pendientes de FinTwin
 
-> Al día el 3 de noviembre de 2026. Se ejecuta en orden; lo marcado 👤 depende de Richard.
+> Al día el 13 de noviembre de 2026. Se ejecuta en orden; lo marcado 👤 depende de Richard.
 
 ## Pedidos de Richard (10 nov 2026)
 
@@ -9,10 +9,11 @@
   Guía en Docs «payment-status».
 - [x] **Clave única para validar**: opcional; la crea el dueño o un validador, solo quien la crea la sabe y la
   cambia, y desde ahí aprobar/rechazar/poner en espera pide esa clave. Candado C-CLAVE-UNICA-1. Guía «validation-key».
-- [ ] **Selector de tipo de pago** en el link (bolívares, dólares, Zelle… y «Otro» escrito). Richard dijo «para
-  después» (10 nov 2026).
-- [ ] **Botón «Tomar foto»** junto a «Subir desde archivos» en toda casilla de imagen (regla global del 9 nov 2026):
-  link de pago, registrar en la cuenta, salidas, gastos de comisión y casos de ayuda, con su candado.
+- [x] **Selector de tipo de pago** en el link (13 nov 2026): Zelle, bolívares, dólares, transferencia, PayPal,
+  tarjeta y «Otro» escrito; lo ve el equipo y quien pagó. Candado C-TIPO-PAGO-1. Guía en Docs «payment-type».
+- [x] **Botón «Tomar foto»** junto a «Subir desde archivos» en toda casilla de imagen (13 nov 2026): link de
+  pago, registrar en la cuenta, salidas, gastos de comisión y casos de ayuda. Candado C-CAMARA-1 (se pone en rojo
+  si una casilla queda sin cámara). Guía en Docs «take-photo». La app de celular la toma sola (es la web adentro).
 
 ## Tiendas
 

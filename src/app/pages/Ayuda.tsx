@@ -1,6 +1,7 @@
-import { BookOpen, ChevronRight, ImagePlus, LifeBuoy, Mail, Send, X } from 'lucide-react';
+import { BookOpen, ChevronRight, LifeBuoy, Mail, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { SubirOFoto } from '../components/BotonCamara';
 import { Aviso, AvisoBorrador, Boton, Campo, Cargando, Pagina, Tarjeta } from '../components/ui';
 import { MAX_ARCHIVO } from '../../shared/reglas';
 import { api, type CasoLista, type EstadoCaso, type MensajeCaso } from '../lib/api';
@@ -24,12 +25,15 @@ function Adjuntos({ archivos, onCambio }: { archivos: File[]; onCambio: (a: File
   const { t } = useI18n();
   const input = useRef<HTMLInputElement>(null);
   async function elegir(lista: FileList | null) {
-    const nuevos = Array.from(lista ?? []).slice(0, MAX_ADJUNTOS - archivos.length);
+    await agregar(Array.from(lista ?? []));
+    if (input.current) input.current.value = '';
+  }
+  async function agregar(lista: File[]) {
+    const nuevos = lista.slice(0, MAX_ADJUNTOS - archivos.length);
     const listos = await Promise.all(
       nuevos.map(async (f) => (f.size > MAX_ARCHIVO ? new File([await prepararImagen(f)], f.name.replace(/\.\w+$/, '.webp')) : f)),
     );
     onCambio([...archivos, ...listos]);
-    if (input.current) input.current.value = '';
   }
   return (
     <div className="space-y-2">
@@ -60,13 +64,7 @@ function Adjuntos({ archivos, onCambio }: { archivos: File[]; onCambio: (a: File
         </ul>
       )}
       {archivos.length < MAX_ADJUNTOS && (
-        <button
-          type="button"
-          onClick={() => input.current?.click()}
-          className="flex items-center gap-2 rounded-xl border border-dashed border-borde px-3 py-2 text-sm text-tenue hover:border-marca hover:text-white"
-        >
-          <ImagePlus className="h-4 w-4" aria-hidden /> {t('help.attach')}
-        </button>
+        <SubirOFoto onArchivos={() => input.current?.click()} onFoto={(f) => void agregar([f])} />
       )}
       <p className="text-xs text-tenue">{t('help.attachHint')}</p>
     </div>

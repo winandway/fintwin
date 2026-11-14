@@ -250,3 +250,7 @@ CREATE TABLE IF NOT EXISTS lecturas_ia (
 ALTER TABLE cuentas ADD COLUMN clave_validar_hash TEXT;
 ALTER TABLE cuentas ADD COLUMN clave_validar_por TEXT;
 ALTER TABLE cuentas ADD COLUMN clave_validar_en INTEGER;
+
+-- 13 nov 2026: tipo de pago que elige quien paga en el link (Zelle, bolívares, dólares…).
+-- Guarda la clave del tipo, o «otro:<lo que escribió>». Opcional.
+ALTER TABLE comprobantes ADD COLUMN tipo_pago TEXT;
